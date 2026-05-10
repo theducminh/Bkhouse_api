@@ -6,18 +6,16 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.api.bkhouse.entity.District;
 import com.api.bkhouse.entity.SpecialAccount;
 import com.api.bkhouse.entity.response.IAgencyRep;
 import com.api.bkhouse.entity.response.IDistrict;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface SpecialAccountRepository extends JpaRepository<SpecialAccount, String> {
+public interface SpecialAccountRepository extends JpaRepository<SpecialAccount, UUID> {
     Optional<SpecialAccount> findByUserId(UUID userId);
     void deleteByUserId(UUID userId);
 
@@ -39,7 +37,7 @@ public interface SpecialAccountRepository extends JpaRepository<SpecialAccount, 
 
     @Query(value = "select distinct concat(u.first_name, ' ', u.middle_name, ' ', u.last_name) as fullName, \n" +
             "u.phone_number as phoneNumber, u.id\n" +
-            "from agency_district ad, special_account sa, user u, real_estate_post rep\n" +
+            "from agency_district ad, special_accounts sa, user u, real_estate_post rep\n" +
             "where rep.district_code = ad.district_code\n" +
             "and ad.enable = 1 \n" +
             "and ad.user_id = sa.user_id\n" +

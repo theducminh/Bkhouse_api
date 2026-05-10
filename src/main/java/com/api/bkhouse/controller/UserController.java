@@ -70,9 +70,23 @@ public class UserController {
                         "Không tìm thấy thông tin người dùng.",
                         HttpStatus.NO_CONTENT));
             } else {
-                DistrictDTO districtDTO = modelMapper.map(districtService.findByCode(user.getDistrictCode()), DistrictDTO.class);
-                ProvinceDTO provinceDTO = modelMapper.map(provinceService.findByCode(user.getProvinceCode()), ProvinceDTO.class);
-                WardDTO wardDTO = modelMapper.map(wardService.findByCode(user.getWardCode()), WardDTO.class);
+                DistrictDTO districtDTO = null;
+                if (user.getDistrictCode() != null) {
+                    var district = districtService.findByCode(user.getDistrictCode());
+                    if (district != null) districtDTO = modelMapper.map(district, DistrictDTO.class);
+                }
+
+                ProvinceDTO provinceDTO = null;
+                if (user.getProvinceCode() != null) {
+                    var province = provinceService.findByCode(user.getProvinceCode());
+                    if (province != null) provinceDTO = modelMapper.map(province, ProvinceDTO.class);
+                }
+
+                WardDTO wardDTO = null;
+                if (user.getWardCode() != null) {
+                    var ward = wardService.findByCode(user.getWardCode());
+                    if (ward != null) wardDTO = modelMapper.map(ward, WardDTO.class);
+                }
 
                 UserInfoResponse userInfoResponse = new UserInfoResponse();
                 userInfoResponse.setAddress(user.getAddress());
@@ -94,7 +108,7 @@ public class UserController {
                 userInfoResponse.setMiddleName(user.getMiddleName());
                 userInfoResponse.setLastName(user.getLastName());
                 userInfoResponse.setUpdatedAt(user.getUpdatedAt());
-                userInfoResponse.setUpdatedBy(userInfoResponse.getUpdatedBy());
+                userInfoResponse.setUpdatedBy(user.getUpdatedBy());
                 userInfoResponse.setRoles(user.getRoles().stream().map(e -> modelMapper.map(e, RoleDTO.class)).collect(Collectors.toSet()));
                 userInfoResponse.setPassword(user.getPassword());
                 userInfoResponse.setPhoneNumber(user.getPhoneNumber());
@@ -103,6 +117,7 @@ public class UserController {
                         "", HttpStatus.OK));
             }
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.ok(new BaseResponse(null,
                     "Đã xảy ra lỗi khi lấy thông tin người dùng " + e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR));
@@ -158,7 +173,7 @@ public class UserController {
                 return ResponseEntity.ok(new BaseResponse(0,
                         "Khóa tài khoản thành công.", HttpStatus.OK));
             } else {
-                user.setEnabled(false);
+                user.setEnabled(true);
                 service.updateUserInfo(user);
                 return ResponseEntity.ok(new BaseResponse(1,
                         "Mở khóa tài khoản thành công.", HttpStatus.OK));

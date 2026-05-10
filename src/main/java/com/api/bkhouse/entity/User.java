@@ -80,7 +80,7 @@ public class User {
     private LocalDate dateOfBirth;
 
     @Column(name = "account_balance")
-    private Long accountBalance;
+    private Long accountBalance = 0L;
 
     @Column(name = "is_enabled")
     private boolean enabled = true;

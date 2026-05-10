@@ -20,14 +20,11 @@ public class PostPay {
     @JoinColumn(name = "real_estate_post_id")
     private RealEstatePost realEstatePost;
 
-    @NotNull
-    @NotBlank
-    @Column(name = "price")
+    @Column(name = "amount")
     private Integer price;
 
-    @NotNull
-    @NotBlank
-    @Column(name = "account_balance")
+    
+    @Column(name = "balance_after")
     private Long accountBalance;
 
     @NotNull

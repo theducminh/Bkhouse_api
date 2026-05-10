@@ -8,7 +8,7 @@ import java.util.UUID;
 public class InterestedDTO {
     private Long id;
     private UUID userId;
-    private String deviceId;
+    private String deviceInfo;
     @NotNull
     @NotBlank
     private UUID realEstatePostId;
@@ -33,12 +33,12 @@ public class InterestedDTO {
         this.userId = userId;
     }
 
-    public String getDeviceId() {
-        return deviceId;
+    public String getDeviceInfo() {
+        return deviceInfo;
     }
 
-    public void setDeviceId(String deviceId) {
-        this.deviceId = deviceId;
+    public void setDeviceInfo(String deviceInfo) {
+        this.deviceInfo = deviceInfo;
     }
 
     public UUID getRealEstatePostId() {

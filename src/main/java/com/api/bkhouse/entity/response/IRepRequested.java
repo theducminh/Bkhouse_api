@@ -4,7 +4,10 @@ public interface IRepRequested {
     String getId();
     String getType();
     String getTitle();
-    Byte getIsSell();
+    
+    // Đã sửa: Byte -> Boolean
+    Boolean getIsSell(); 
+    
     Double getPrice();
     String getStatus();
     String getFullName();

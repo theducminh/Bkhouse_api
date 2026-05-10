@@ -59,6 +59,7 @@ public class ProjectDTO {
     private Map<String, Object> metadata;
     private Instant createAt;
     private Instant updateAt;
+    private UUID createBy;
     private List<ProjectParamDTO> projectParams;
 
     public UUID getId() {
@@ -156,6 +157,14 @@ public class ProjectDTO {
 
     public void setCreateAt(Instant createAt) {
         this.createAt = createAt;
+    }
+
+    public UUID getCreateBy() {
+        return createBy;
+    }
+
+    public void setCreateBy(UUID createBy) {
+        this.createBy = createBy;
     }
 
 

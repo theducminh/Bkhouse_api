@@ -55,38 +55,40 @@ public class PhotoController {
         }
     }
 
-    @DeleteMapping("/api/v1/photos/{postId}")
+    @DeleteMapping("/api/v1/photos/photo/{id}")
     @PreAuthorize("hasRole('ROLE_AGENCY') or hasRole('ROLE_ADMIN') or hasRole('ROLE_USER') or hasRole('ROLE_ENTERPRISE')")
-    public ResponseEntity<BaseResponse> deletePhotoByPostId(@PathVariable("postId") UUID postId) {
+    public ResponseEntity<BaseResponse> deletePhotoById(@PathVariable("id") UUID postMediaId) {
         try {
-            List<PostMedia> postMediaList = postMediaService.findByPostId(postId);
-            for (PostMedia postMedia :
-                    postMediaList) {
-                photoService.deletePhotoById(postMedia.getId());
+            // 1. Tìm bản ghi link ảnh trong PostgreSQL bằng UUID
+            // (Lưu ý: Nếu service của bạn chưa có hàm findById thì hãy gọi thẳng repository.findById(postMediaId).get() nhé)
+            PostMedia postMedia = postMediaService.findById(postMediaId);
+            
+            if (postMedia != null) {
+                String mediaUrl = postMedia.getMediaUrl();
+                
+                // 2. Cắt lấy ID của MongoDB từ đường link
+                if (mediaUrl != null && mediaUrl.contains("/")) {
+                    String mongoId = mediaUrl.substring(mediaUrl.lastIndexOf("/") + 1);
+                    
+                    // 3. Xóa file vật lý trong MongoDB
+                    try {
+                        photoService.deletePhotoById(mongoId);
+                    } catch (Exception ex) {
+                        logger.error("Lỗi xóa ảnh trên Mongo ID: " + mongoId, ex);
+                    }
+                }
+                
+                // 4. Xóa bản ghi đường link trong PostgreSQL
+                postMediaService.deleteById(postMediaId);
             }
-            postMediaService.deleteByPostId(postId);
-            return ResponseEntity.ok(new BaseResponse(null, "", HttpStatus.OK));
+
+            return ResponseEntity.ok(new BaseResponse(null, "Xóa ảnh thành công.", HttpStatus.OK));
         } catch (Exception e) {
-            return ResponseEntity.ok(new BaseResponse(null,
-                    "Đã xảy ra lỗi khi xóa ảnh. " + e.getMessage(),
-                    HttpStatus.INTERNAL_SERVER_ERROR));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new BaseResponse(null, "Đã xảy ra lỗi khi xóa ảnh. " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR));
         }
     }
 
-    @DeleteMapping("/api/v1/photos/photo/{id}")
-    @PreAuthorize("hasRole('ROLE_AGENCY') or hasRole('ROLE_ADMIN') or hasRole('ROLE_USER') or hasRole('ROLE_ENTERPRISE')")
-    public ResponseEntity<BaseResponse> deletePhotoById(@PathVariable("id") String photoId) {
-        try {
-            photoService.deletePhotoById(photoId);
-            postMediaService.deleteById(photoId);
-            return ResponseEntity.ok(new BaseResponse(null, "Xóa ảnh thành công.", HttpStatus.OK));
-        } catch (Exception e) {
-            return ResponseEntity.ok(new BaseResponse(
-                    null,
-                    "Đã xảy ra lỗi khi xóa ảnh.",
-                    HttpStatus.INTERNAL_SERVER_ERROR));
-        }
-    }
 
     @GetMapping("/api/no-auth/photos/{id}")
     public ResponseEntity<BaseResponse> getPhoto(@PathVariable String id, Model model) {

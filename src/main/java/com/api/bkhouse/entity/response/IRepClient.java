@@ -8,7 +8,10 @@ public interface IRepClient {
     String getAddressShow();
     Double getPrice();
     Double getArea();
-    Byte getSell();
+    
+    // ĐÃ SỬA Ở ĐÂY: Chuyển từ Byte sang Boolean
+    Boolean getSell(); 
+    
     Instant getCreateAt();
     String getImageUrl();
 }

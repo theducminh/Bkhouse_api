@@ -15,38 +15,29 @@ public class ChatRoom {
     private Integer id;
         
     @Column(name = "first_user_id")
-    @NotBlank
     @NotNull
     private UUID firstUserId;
 
     @Column(name = "second_user_id")
-    @NotBlank
     @NotNull
     private UUID secondUserId;
 
-    @Column(name = "enable")
-    @NotNull
-    @NotBlank
+    @Column(name = "is_active")
     private boolean enable;
 
-    @Column(name = "create_by", updatable = false)
+    @Column(name = "created_by", updatable = false)
     private UUID createBy;
 
-    @Column(name = "create_at", updatable = false)
+    @Column(name = "created_at", updatable = false)
     private Instant createAt;
 
-    @Column(name = "update_by")
-    private UUID updateBy;
-
-    @Column(name = "update_at")
+    @Column(name = "updated_at")
     private Instant updateAt;
 
     @OneToMany(mappedBy = "chatRoom")
     private List<Message> messages;
 
-    @Column(name = "anonymous")
-    @NotNull
-    @NotBlank
+    @Column(name = "is_anonymous")
     private boolean anonymous;
 
     public Integer getId() {
@@ -95,14 +86,6 @@ public class ChatRoom {
 
     public void setCreateAt(Instant createAt) {
         this.createAt = createAt;
-    }
-
-    public UUID getUpdateBy() {
-        return updateBy;
-    }
-
-    public void setUpdateBy(UUID updateBy) {
-        this.updateBy = updateBy;
     }
 
     public Instant getUpdateAt() {

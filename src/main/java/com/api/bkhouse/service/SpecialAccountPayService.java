@@ -8,13 +8,14 @@ import com.api.bkhouse.entity.SpecialAccountPay;
 import com.api.bkhouse.repository.SpecialAccountPayRepository;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class SpecialAccountPayService {
     @Autowired
     private SpecialAccountPayRepository repository;
 
-    public List<SpecialAccountPay> getSpecialAccountPaysByUserId(String userId) {
+    public List<SpecialAccountPay> getSpecialAccountPaysByUserId(UUID userId) {
         return repository.findByUserIdOrderByCreateAtDesc(userId);
     }
 

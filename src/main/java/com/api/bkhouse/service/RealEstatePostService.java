@@ -82,10 +82,10 @@ public class RealEstatePostService {
     public RealEstatePost create(RealEstatePost realEstatePost) {
         RealEstatePost saved = repository.save(realEstatePost);
         RealEstatePostPrice realEstatePostPrice = new RealEstatePostPrice();
-        realEstatePostPrice.setId(0L);
+        realEstatePostPrice.setId(null);
         realEstatePostPrice.setPrice(saved.getPrice());
         realEstatePostPrice.setRealEstatePost(saved);
-        realEstatePostPrice.setCreateBy(saved.getCreateBy());
+        realEstatePostPrice.setCreateBy(saved.getCreatedBy());
         realEstatePostPrice.setCreateAt(Util.getCurrentDateTime());
         realEstatePostPriceRepository.save(realEstatePostPrice);
         return saved;
@@ -94,7 +94,7 @@ public class RealEstatePostService {
     @Transactional
     public void createRepPrice(Double price, UUID repId, UUID userId) {
         RealEstatePostPrice realEstatePostPrice = new RealEstatePostPrice();
-        realEstatePostPrice.setId(0L);
+        realEstatePostPrice.setId(null);
         realEstatePostPrice.setRealEstatePost(findByIdAndEnable(repId));
         realEstatePostPrice.setCreateAt(Util.getCurrentDateTime());
         realEstatePostPrice.setCreateBy(userId);
@@ -143,7 +143,7 @@ public class RealEstatePostService {
     public void updateView(UUID realEstatePostId) {
         repository.updateView(realEstatePostId);
         PostView postView= new PostView();
-        postView.setId(0L);
+        postView.setId(null);
         postView.setRealEstatePostId(realEstatePostId);
         postView.setCreateBy(UUID.randomUUID());
         postView.setCreateAt(Util.getCurrentDateTime());
@@ -154,7 +154,7 @@ public class RealEstatePostService {
     public void updateClickedView(UUID realEstatePostId) {
         repository.updateClickedView(realEstatePostId);
         ClickedInfoView clickedInfoView = new ClickedInfoView();
-        clickedInfoView.setId(0L);
+        clickedInfoView.setId(null);
         clickedInfoView.setRealEstatePostId(realEstatePostId);
         clickedInfoView.setCreateBy(UUID.randomUUID());
         clickedInfoView.setCreateAt(Util.getCurrentDateTime());
@@ -162,7 +162,7 @@ public class RealEstatePostService {
     }
 
     public RealEstatePost findByIdAndEnable(UUID id) {
-        Optional<RealEstatePost> realEstatePost = repository.findByIdAndEnable(id, true);
+        Optional<RealEstatePost> realEstatePost = repository.findByIdAndEnabled(id, true);
         if (realEstatePost.isEmpty()) {
             return null;
         }
@@ -170,7 +170,7 @@ public class RealEstatePostService {
     }
 
     public boolean existsByIdAndEnable(UUID id) {
-        return repository.existsByIdAndEnable(id, true);
+        return repository.existsByIdAndEnabled(id, true);
     }
 
     public List<IRepEnableRequest> enableRequestRep(UUID userId) {
@@ -233,7 +233,7 @@ public class RealEstatePostService {
     public Object countInterested(String userId, String deviceInfo) {
         String query = "select count(*) as cnt\n" +
                 "from interested i inner join real_estate_post rep on i.real_estate_post_id = rep.id\n" +
-                "where rep.enable = 1 and i.user_id = :userId ";
+                "where rep.is_enabled = true and i.user_id = :userId ";
         Map<String, Object> params = new HashMap<>();
         if (deviceInfo != null && deviceInfo.length() > 0 && (userId == null || userId.length() == 0)) {
 //            return interestedRepository.countByUserIdAndDeviceInfo("anonymous", deviceInfo);
@@ -247,7 +247,7 @@ public class RealEstatePostService {
         return result.get("cnt");
     }
 
-    public List<RepDetailPageResponse> detailPageData(Byte sell, String type, Integer limit, Integer offset, UUID userId, String deviceInfo) {
+    public List<RepDetailPageResponse> detailPageData(Boolean sell, String type, Integer limit, Integer offset, UUID userId, String deviceInfo) {
         List<RepDetailPageResponse> responses = new ArrayList<>();
         List<UUID> repIds = repository.getRepIdDetailPage(sell, type, limit, offset);
         if (repIds.isEmpty()) {
@@ -266,7 +266,7 @@ public class RealEstatePostService {
                         response.setDirection(realEstatePost.getDirection());
                         response.setTitle(realEstatePost.getTitle());
                         response.setPrice(realEstatePost.getPrice());
-                        response.setCreateAt(realEstatePost.getCreateAt());
+                        response.setCreateAt(realEstatePost.getCreatedAt());
                         response.setAvatarUrl(realEstatePost.getOwnerId().getAvatarUrl());
                         response.setFullName(realEstatePost.getOwnerId().getFirstName() + " "
                                 + realEstatePost.getOwnerId().getMiddleName() + " "
@@ -275,7 +275,7 @@ public class RealEstatePostService {
                         response.setPhoneNumber(realEstatePost.getOwnerId().getPhoneNumber());
                         List<PostMedia> postMedias = postMediaRepository.findByPostId(e);
                         if (!postMedias.isEmpty()) {
-                            response.setImageUrl(postMedias.get(0).getId());
+                            response.setImageUrl(postMedias.get(0).getMediaUrl());
                         }
                         response.setInterested(isInterested(userId, e, deviceInfo));
                         responses.add(response);
@@ -330,7 +330,7 @@ public class RealEstatePostService {
         return repository.getLstNewest();
     }
 
-    public Integer countTotalBySellAndTypeClient(Byte sell, String type) {
+    public Integer countTotalBySellAndTypeClient(Boolean sell, String type) {
         return repository.countTotalBySellAndTypeClient(sell, type);
     }
 
@@ -548,7 +548,7 @@ public class RealEstatePostService {
             return null;
         } else {
             StatisticPriceFluctuation statisticPriceFluctuation = new StatisticPriceFluctuation();
-            statisticPriceFluctuation.setId(0L);
+            statisticPriceFluctuation.setId(null);
             statisticPriceFluctuation.setSell(sell);
             statisticPriceFluctuation.setType(type);
             try {
@@ -592,8 +592,8 @@ public class RealEstatePostService {
                                 "and type = :type\n" +
                                 "and district_code = :districtCode\n" +
                                 "and province_code = :provinceCode\n" +
-                                "and month(create_at) = :month\n" +
-                                "and year(create_at) = :year";
+                                "and extract(month from create_at) = :month\n" +
+                                "and extract(year from create_at) = :year";
                         Map<String, Object> params = new HashMap<>();
                         params.put("sell", sell);
                         params.put("type", type);
@@ -745,8 +745,8 @@ public class RealEstatePostService {
                     Series series = new Series();
                     series.setName(wardCode);
                     for (int i = 1; i <= val; i++) {
-                        String sql = finalQuery + "and year(create_at) = :year " +
-                                "and month(create_at) = :month ";
+                        String sql = finalQuery + "and extract(year from create_at) = :year " +
+                                "and extract(month from create_at) = :month ";
                         params.put("month", i);
                         params.put("year", year);
                         Map<String, Object> jdbcResponse = jdbcTemplate.queryForMap(sql, new MapSqlParameterSource(params));
@@ -783,8 +783,8 @@ public class RealEstatePostService {
                                 Series series = new Series();
                                 series.setName(e.getName());
                                 for (int i = 1; i <= val; i++) {
-                                    String sql = finalQuery + "and year(create_at) = :year " +
-                                            "and month(create_at) = :month " +
+                                    String sql = finalQuery + "and extract(year from create_at) = :year " +
+                                            "and extract(month from create_at) = :month " +
                                             "and ward_code = :wardCode ";
                                     params.put("month", i);
                                     params.put("year", year);
@@ -828,8 +828,8 @@ public class RealEstatePostService {
                                 Series series = new Series();
                                 series.setName(e.getName());
                                 for (int i = 1; i <= val; i++) {
-                                    String sql = finalQuery + "and year(create_at) = :year " +
-                                            "and month(create_at) = :month " +
+                                    String sql = finalQuery + "and extract(year from create_at) = :year " +
+                                            "and extract(month from create_at) = :month " +
                                             "and district_code = :districtCode ";
                                     params.put("month", i);
                                     params.put("year", year);
@@ -907,7 +907,7 @@ public class RealEstatePostService {
         Map<String, Object> params = new HashMap<>();
         params.put("postId", postId);
         if (month == 0) {
-            query += " and month(create_at) = :month and year(create_at) = :year ";
+            query += " and extract(month from create_at) = :month and extract(year from create_at) = :year ";
             val = Util.getCurrMonth(year);
             for (int i = 1; i <= val; i++) {
                 params.put("month", i);

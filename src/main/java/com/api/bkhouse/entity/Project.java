@@ -3,6 +3,8 @@ package com.api.bkhouse.entity;
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+
+import org.checkerframework.checker.units.qual.C;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
@@ -31,19 +33,16 @@ public class Project {
     @OneToOne
     @JoinColumn(name = "province_code", updatable = false)
     @NotNull
-    @NotBlank
     private Province province;
 
     @OneToOne
     @JoinColumn(name = "district_code", updatable = false)
     @NotNull
-    @NotBlank
     private District district;
 
     @OneToOne
     @JoinColumn(name = "ward_code", updatable = false)
     @NotNull
-    @NotBlank
     private Ward ward;
 
     @Column(name = "address")
@@ -56,13 +55,11 @@ public class Project {
 
     @Column(name = "type")
     @NotNull
-    @NotBlank
     @Enumerated(EnumType.STRING)
     private EProjectType type;
 
     @Column(name = "phone_number")
     @NotNull
-    @NotBlank
     private String phoneNumber;
 
     @Column(name = "email")
@@ -75,25 +72,26 @@ public class Project {
     @NotBlank
     private String imageUrl;
 
+    @Column(name = "description")
+    private String description;
+
     @Column(name = "is_enabled")
-    @NotNull
-    @NotBlank
     private boolean enable;
 
     @Type(type = "jsonb")
     @Column(name  = "metadata", columnDefinition = "jsonb")
     private Map<String, Object> metadata;
 
-    @Column(name = "create_at", updatable = false)
+    @Column(name = "created_at", updatable = false)
     private Instant createAt;
 
-    @Column(name = "update_at")
+    @Column(name = "updated_at")
     private Instant updateAt;
 
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL)
     private List<ProjectParam> projectParams;
 
-    @Column(name = "create_by", updatable = false)
+    @Column(name = "created_by", updatable = false)
     private UUID createBy;
 
     public UUID getId() {
@@ -152,6 +150,14 @@ public class Project {
     public void setType(EProjectType type) {
         this.type = type;
     }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }   
 
     public Map<String, Object> getMetadata() {
         return metadata;

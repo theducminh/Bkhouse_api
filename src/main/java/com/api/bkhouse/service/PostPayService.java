@@ -9,6 +9,7 @@ import com.api.bkhouse.entity.PostPay;
 import com.api.bkhouse.repository.PostPayRepository;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class PostPayService {
@@ -20,7 +21,7 @@ public class PostPayService {
         return repository.save(postPay);
     }
 
-    public List<PostPay> findByUserId(String userId) {
+    public List<PostPay> findByUserId(UUID userId) {
         return repository.findByUserIdOrderByCreateAtDesc(userId);
     }
 

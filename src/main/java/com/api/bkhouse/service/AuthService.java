@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.api.bkhouse.constant.enumeric.ERole;
 import com.api.bkhouse.entity.*;
 import com.api.bkhouse.exception.TokenRefreshException;
+import com.api.bkhouse.payload.dto.RoleDTO;
 //import com.api.bkhouse.payload.dto.RoleDTO;
 import com.api.bkhouse.payload.dto.UserDTO;
 import com.api.bkhouse.payload.request.ForgotPassword;
@@ -29,15 +30,102 @@ import com.api.bkhouse.repository.UserRepository;
 import com.api.bkhouse.security.jwt.JwtUtils;
 import com.api.bkhouse.security.services.UserDetailsImpl;
 import com.api.bkhouse.util.Util;
+import com.api.bkhouse.repository.SpecialAccountRepository;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.UUID;
 
 @Service
 public class AuthService {
+    @Value("${app.google.client-id}")
+    private String googleClientId;
+
+    // Giả sử bạn đã @Autowired các Bean này:
+    // @Autowired UserRepository userRepository;
+    // @Autowired PasswordEncoder encoder;
+    // @Autowired JwtUtils jwtUtils;
+
+    public BaseResponse processGoogleLogin(String idTokenString, String deviceInfo) {
+        try {
+            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
+                    .setAudience(Collections.singletonList(googleClientId))
+                    .build();
+
+            GoogleIdToken idToken = verifier.verify(idTokenString);
+
+            if (idToken != null) {
+                GoogleIdToken.Payload payload = idToken.getPayload();
+
+                String email = payload.getEmail();
+                String firstName = (String) payload.get("given_name");
+                String lastName = (String) payload.get("family_name");
+                String pictureUrl = (String) payload.get("picture");
+
+                User user = userRepository.findByEmail(email).orElse(null);
+
+                if (user == null) {
+                    user = new User();
+                    user.setId(UUID.randomUUID());
+                    user.setEmail(email);
+                    user.setUsername(email.split("@")[0] + "_gg_" + UUID.randomUUID().toString().substring(0, 5));
+                    user.setPassword(encoder.encode(UUID.randomUUID().toString()));
+                    user.setFirstName(firstName != null ? firstName : "User");
+                    user.setLastName(lastName != null ? lastName : "");
+                    user.setAvatarUrl(pictureUrl);
+                    user.setEnabled(true);
+                    user.setAccountBalance(0L);
+
+                    Role defaultRole = roleRepository.findByName(ERole.ROLE_USER)
+                            .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+                    user.setRoles(Collections.singleton(defaultRole));
+
+                    user = userRepository.save(user);
+                    
+                } else if (!user.isEnabled()) {
+                    return new BaseResponse(null, "Tài khoản của bạn đã bị khóa", HttpStatus.FORBIDDEN);
+                }
+
+                String jwt = jwtUtils.generateTokenFromUsername(user.getUsername(), user.getId());
+
+                RefreshToken refreshTokenObj = refreshTokenService.createRefreshToken(user.getId());
+                String refreshTokenStr = refreshTokenObj.getToken();
+
+                List<String> roles = user.getRoles().stream()
+                        .map(item -> item.getName().name())
+                        .collect(Collectors.toList());
+
+                // ---- ĐÃ SỬA: SỬ DỤNG JwtResponse ĐÚNG THEO FILE CỦA BẠN ----
+                JwtResponse jwtResponse = new JwtResponse(
+                        jwt, 
+                        refreshTokenStr, 
+                        user.getId(), 
+                        user.getUsername(), 
+                        user.getEmail(), 
+                        roles
+                );
+
+                return new BaseResponse(jwtResponse, "Đăng nhập Google thành công", HttpStatus.OK);
+
+            } else {
+                return new BaseResponse(null, "Chữ ký Google Token không hợp lệ", HttpStatus.UNAUTHORIZED);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new BaseResponse(null, "Lỗi Server: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @Autowired
     UserRepository userRepository;
 
@@ -55,6 +143,9 @@ public class AuthService {
 
     @Autowired
     JwtUtils jwtUtils;
+
+    @Autowired
+    SpecialAccountRepository specialAccountRepository;
 
     @Autowired
     private ModelMapper modelMapper;
@@ -135,7 +226,7 @@ public class AuthService {
     
 // ...
 
-@Transactional
+@Transactional(rollbackFor = Exception.class)
 public BaseResponse registerUser(UserDTO signupRequest) {
     // 1. Kiểm tra trùng lặp
     if (userRepository.existsByUsername(signupRequest.getUsername())) {
@@ -148,6 +239,7 @@ public BaseResponse registerUser(UserDTO signupRequest) {
 
     // 2. Convert từ DTO sang Entity trước
     User user = convertToEntity(signupRequest);
+    user.setId(null); // Tạo ID mới cho User, để Hibernate tự quản lý
 
     // 3. Xử lý các trường nhạy cảm & tự động trực tiếp trên Entity
     // KHÔNG TỰ SET ID NỮA, để @GeneratedValue lo!
@@ -157,6 +249,7 @@ public BaseResponse registerUser(UserDTO signupRequest) {
 
     // 4. Tuyệt chiêu xử lý Role (Diệt tận gốc TransientObjectException)
     Set<Role> finalRoles = new HashSet<>();
+    boolean isEnterprise = false; // Biến cờ để đánh dấu có role enterprise hay không
     
     if (signupRequest.getRoles() == null || signupRequest.getRoles().isEmpty()) {
         // Mặc định là USER nếu không gửi gì lên
@@ -165,27 +258,38 @@ public BaseResponse registerUser(UserDTO signupRequest) {
         finalRoles.add(defaultRole);
     } else {
         // Duyệt qua danh sách Role gửi lên để lấy Role "THẬT" từ DB
-        signupRequest.getRoles().forEach(roleDTO -> {
-            String roleName = roleDTO.getName(); // Lấy tên role từ JSON
-            if ("ROLE_AGENCY".equals(roleName)) {
-                Role agencyRole = roleRepository.findByName(ERole.ROLE_AGENCY)
-                        .orElseThrow(() -> new RuntimeException("Error: Role Agency không tìm thấy."));
+        for (RoleDTO roleDTO : signupRequest.getRoles()) {
+            String roleName = roleDTO.getName(); 
+            if ("ROLE_ENTERPRISE".equals(roleName)) {
+                Role agencyRole = roleRepository.findByName(ERole.ROLE_ENTERPRISE)
+                        .orElseThrow(() -> new RuntimeException("Error: Role Enterprise không tìm thấy."));
                 finalRoles.add(agencyRole);
+                isEnterprise = true; // Gán thoải mái không bị lỗi Java
             } else {
                 Role userRole = roleRepository.findByName(ERole.ROLE_USER)
                         .orElseThrow(() -> new RuntimeException("Error: Role User không tìm thấy."));
                 finalRoles.add(userRole);
             }
-        });
+        }
     }
     
     // Gán Set Role Thật vào User
     user.setRoles(finalRoles);
+    User savedUser = userRepository.saveAndFlush(user); // Lưu User trước để có ID
 
     // 5. Lưu 1 lần duy nhất
-    userRepository.save(user);
+    userRepository.saveAndFlush(user);
+    if (isEnterprise) {
+        SpecialAccount specialAccount = new SpecialAccount();
+        specialAccount.setUser(savedUser); // Gán trực tiếp đối tượng User đã có ID
+        specialAccount.setMonthlyCharge(0); // Mặc định, có thể cập nhật sau
+        specialAccount.setAgency(true);
+        specialAccount.setLastPaid(Util.getCurrentDateTime());
+        specialAccount.setNotifyBefore(3); // Mặc định thông báo trước 3 ngày
+        specialAccountRepository.save(specialAccount);
+    }
 
-    return new BaseResponse(null, "Đăng ký tài khoản thành công", HttpStatus.OK);
+    return new BaseResponse(user.getId(), "Đăng ký tài khoản thành công", HttpStatus.OK);
 }
     // ... Các hàm khác giữ nguyên nhưng đổi package com.api.bkland ...
     

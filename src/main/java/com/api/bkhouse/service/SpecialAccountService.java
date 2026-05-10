@@ -21,11 +21,9 @@ import com.api.bkhouse.repository.UserRepository;
 import com.api.bkhouse.util.Util;
 
 import javax.transaction.Transactional;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.UUID;
 
 @Service
@@ -74,7 +72,7 @@ public class SpecialAccountService {
 
             SpecialAccountPay specialAccountPay = new SpecialAccountPay();
             specialAccountPay.setUser(user);
-            specialAccountPay.setId(0L);
+            specialAccountPay.setId(null);
             specialAccountPay.setAmount(totalPaid);
             specialAccountPay.setAccountBalance(user.getAccountBalance() - totalPaid);
             specialAccountPay.setContent(PayContent.MONTHLY_CHARGE);
@@ -127,7 +125,7 @@ public class SpecialAccountService {
                 int delta = totalPaid - specialAccount.getMonthlyCharge();
                 SpecialAccountPay specialAccountPay = new SpecialAccountPay();
                 specialAccountPay.setUser(user);
-                specialAccountPay.setId(0L);
+                specialAccountPay.setId(null);
                 specialAccountPay.setAmount(delta);
                 specialAccountPay.setAccountBalance(user.getAccountBalance() - delta);
                 specialAccountPay.setContent(PayContent.EXTRA_CHARGE);

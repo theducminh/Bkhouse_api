@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.UUID;
 
 @RestController
 @CrossOrigin(origins = "*", maxAge = 3600)
@@ -40,7 +41,7 @@ public class PaymentController {
 
     @GetMapping("/{userId}")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_ADMIN') or hasRole('ROLE_ENTERPRISE') or hasRole('ROLE_AGENCY')")
-    public ResponseEntity<BaseResponse> findAllByUserId(@PathVariable("userId") String userId) {
+    public ResponseEntity<BaseResponse> findAllByUserId(@PathVariable("userId") UUID userId) {
         try {
             List<PostPay> postPays = postPayService.findByUserId(userId);
             List<SpecialAccountPay> specialAccountPays = specialAccountPayService.getSpecialAccountPaysByUserId(userId);

@@ -5,6 +5,9 @@ public interface IRepEnableRequest {
     String getType();
     String getTitle();
     String getDistrictCode();
-    Byte getIsSell();
+    
+    // Đã sửa: Byte -> Boolean
+    Boolean getIsSell(); 
+    
     Double getPrice();
 }

@@ -12,15 +12,15 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface PostMediaRepository extends JpaRepository<PostMedia, String> {
+public interface PostMediaRepository extends JpaRepository<PostMedia, UUID> {
     List<PostMedia> findByPostId(UUID postId);
 
     @Modifying
     void deleteByPostId(UUID postId);
 
     @Query(value = "select id from post_media where post_id = :postId limit 1", nativeQuery = true)
-    Optional<String> getOneImageOfPost(UUID postId);
+    Optional<UUID> getOneImageOfPost(UUID postId);
 
     @Query(value = "delete from post_media where id = :id", nativeQuery = true)
-    Optional<String> deleteById1(UUID id);
+    Optional<UUID> deleteById1(UUID id);
 }

@@ -8,7 +8,7 @@ import java.util.UUID;
 public class ProjectInterestedDTO {
     private Long id;
     private UUID userId;
-    private String deviceId;
+    private String deviceInfo;
     @NotNull
     private UUID projectId;
     private Instant createAt;
@@ -29,12 +29,12 @@ public class ProjectInterestedDTO {
         this.userId = userId;
     }
 
-    public String getDeviceId() {
-        return deviceId;
+    public String getDeviceInfo() {
+        return deviceInfo;
     }
 
-    public void setDeviceId(String deviceId) {
-        this.deviceId = deviceId;
+    public void setDeviceInfo(String deviceInfo) {
+        this.deviceInfo = deviceInfo;
     }
 
     public UUID getProjectId() {

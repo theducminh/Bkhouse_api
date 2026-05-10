@@ -10,9 +10,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface ProjectInterestedRepository extends JpaRepository<ProjectInterested, Long> {
-    boolean existsByDeviceIdAndProjectId(String deviceId, UUID projectId);
+    boolean existsByDeviceInfoAndProjectId(String deviceInfo, UUID projectId);
     boolean existsByUserIdAndProjectId(UUID userId, UUID projectId);
-    Optional<ProjectInterested> findByDeviceIdAndProjectId(String deviceId, UUID projectId);
+    Optional<ProjectInterested> findByDeviceInfoAndProjectId(String deviceInfo, UUID projectId);
     Optional<ProjectInterested> findByUserIdAndProjectId(UUID userId, UUID projectId);
     List<ProjectInterested> findByUserId(UUID userId, Sort sort);
 }

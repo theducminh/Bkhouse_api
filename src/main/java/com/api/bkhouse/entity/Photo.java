@@ -7,8 +7,8 @@ package com.api.bkhouse.entity;
 import org.bson.types.Binary;
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.annotation.Id; //
 
-import javax.persistence.Id;
 
 /**
  *
@@ -22,6 +22,8 @@ public class Photo {
     private String title;
         
     private Binary image;
+    public Photo() {
+    }
 
     public Photo(String title) {
         this.title = title;

@@ -6,10 +6,16 @@ public interface IRepAdmin {
     String getId();
     String getType();
     String getFullName();
-    Byte getSell();
+    
+    // Đã sửa: Byte -> Boolean
+    Boolean getSell(); 
+    
     String getPhoneNumber();
     String getStatus();
-    Byte getEnable();
+    
+    // Đã sửa: Byte -> Boolean
+    Boolean getEnable(); 
+    
     Double getPrice();
     Double getArea();
     Instant getCreateAt();

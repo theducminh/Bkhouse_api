@@ -8,143 +8,123 @@ import com.api.bkhouse.constant.enumeric.EDirection;
 import com.api.bkhouse.constant.enumeric.EStatus;
 import com.api.bkhouse.constant.enumeric.EType;
 
+// Import JTS cho kiểu PostGIS Geography (Cần thư viện hibernate-spatial)
+import org.locationtech.jts.geom.Point; 
+
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "real_estate_post")
+@Table(name = "real_estate_posts")
 public class RealEstatePost {
+
     @Id
     @Column(name = "id")
     private UUID id;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "type", updatable = false)
+    @Column(name = "type")
     @NotNull
-    @NotBlank
     private EType type;
 
-    @OneToOne
-    @JoinColumn(name = "owner_id", updatable = false)
-    private User ownerId;
+    // Quan hệ Nhiều - Một (Một user có thể có nhiều bài đăng)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id")
+    private User owner;
 
-    @Column(name = "title")
-    @NotNull
+    @Column(name = "title", columnDefinition = "TEXT")
     @NotBlank
     private String title;
 
-    @Column(name = "description")
-    @NotNull
+    @Column(name = "description", columnDefinition = "TEXT")
     @NotBlank
     private String description;
 
-    @Column(name = "address_show")
-    @NotNull
+    @Column(name = "address_show", columnDefinition = "TEXT")
     @NotBlank
     private String addressShow;
 
     @Column(name = "area")
     @NotNull
-    @NotBlank
     private Double area;
 
     @Column(name = "price")
     @NotNull
-    @NotBlank
     private Double price;
 
-    @OneToOne
+    // Quan hệ Nhiều - Một 
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "province_code")
     @NotNull
-    @NotBlank
     private Province province;
 
-    @OneToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "district_code")
     @NotNull
-    @NotBlank
     private District district;
 
-    @OneToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ward_code")
     @NotNull
-    @NotBlank
     private Ward ward;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     @NotNull
-    @NotBlank
     private EStatus status;
 
-    @Column(name = "lat")
-    @NotNull
-    @NotBlank
-    private Double lat;
+    // Cột vị trí sử dụng kiểu Geography
+    @Column(name = "location", columnDefinition = "geography(Point, 4326)")
+    private Point location; 
 
-    @Column(name = "lng")
+    @Column(name = "is_enabled")
     @NotNull
-    @NotBlank
-    private Double lng;
+    private Boolean enabled;
 
-    @Column(name = "enable")
+    @Column(name = "is_sell")
     @NotNull
-    @NotBlank
-    private boolean enable;
+    private Boolean isSell;
 
     @Column(name = "priority")
-    @NotNull
-    @NotBlank
     private Integer priority;
-
-    @Column(name = "period")
-    @NotNull
-    @NotBlank
-    private Integer period;
-
-    @Column(name = "street")
-    @NotNull
-    @NotBlank
-    private String street;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "direction")
-    @NotNull
-    @NotBlank
     private EDirection direction;
 
-    @Column(name = "view")
-    private Integer view;
+    @Column(name = "street", columnDefinition = "TEXT")
+    private String street;
 
-    @Column(name = "clicked_view")
-    private Integer clickedView;
+    @Column(name = "view_count")
+    private Integer viewCount;
 
-    @Column(name = "is_sell", updatable = false)
-    private boolean sell;
+    @Column(name = "contact_count")
+    private Integer contactCount;
 
-    @Column(name = "create_by", updatable = false)
-    private UUID createBy;
+    // Lưu trữ metadata linh hoạt dưới dạng JSON
+    @Column(name = "metadata", columnDefinition = "jsonb")
+    private String metadata; 
 
-    @Column(name = "create_at", updatable = false)
-    private Instant createAt;
+    // Trường Embedding để hỗ trợ tìm kiếm vector (AI)
+    @Column(name = "embedding", columnDefinition = "vector")
+    private String embedding; 
 
-    @Column(name = "update_by")
-    private UUID updateBy;
+    @Column(name = "created_by")
+    private UUID createdBy;
 
-    @Column(name = "update_at")
-    private Instant updateAt;
+    @Column(name = "created_at", updatable = false)
+    private Instant createdAt;
+
+    @Column(name = "updated_at")
+    private Instant updatedAt;
 
     @OneToMany(mappedBy = "realEstatePost")
     private List<RealEstatePostPrice> realEstatePostPrices;
 
-    public List<RealEstatePostPrice> getRealEstatePostPrices() {
-        return realEstatePostPrices;
-    }
-
-    public void setRealEstatePostPrices(List<RealEstatePostPrice> realEstatePostPrices) {
-        this.realEstatePostPrices = realEstatePostPrices;
-    }
+    // ==========================================
+    // GETTERS VÀ SETTERS
+    // ==========================================
 
     public UUID getId() {
         return id;
@@ -163,11 +143,11 @@ public class RealEstatePost {
     }
 
     public User getOwnerId() {
-        return ownerId;
+        return owner;
     }
 
-    public void setOwnerId(User ownerId) {
-        this.ownerId = ownerId;
+    public void setOwnerId(User owner) {
+        this.owner = owner;
     }
 
     public String getTitle() {
@@ -242,28 +222,28 @@ public class RealEstatePost {
         this.status = status;
     }
 
-    public Double getLat() {
-        return lat;
+    public Point getLocation() {
+        return location;
     }
 
-    public void setLat(Double lat) {
-        this.lat = lat;
+    public void setLocation(Point location) {
+        this.location = location;
     }
 
-    public Double getLng() {
-        return lng;
+    public Boolean getEnabled() {
+        return enabled;
     }
 
-    public void setLng(Double lng) {
-        this.lng = lng;
+    public void setEnabled(Boolean enabled) {
+        this.enabled = enabled;
     }
 
-    public boolean isEnable() {
-        return enable;
+    public Boolean getSell() {
+        return isSell;
     }
 
-    public void setEnable(boolean enable) {
-        this.enable = enable;
+    public void setSell(Boolean sell) {
+        isSell = sell;
     }
 
     public Integer getPriority() {
@@ -274,60 +254,12 @@ public class RealEstatePost {
         this.priority = priority;
     }
 
-    public Integer getPeriod() {
-        return period;
-    }
-
-    public void setPeriod(Integer period) {
-        this.period = period;
-    }
-
     public EDirection getDirection() {
         return direction;
     }
 
     public void setDirection(EDirection direction) {
         this.direction = direction;
-    }
-
-    public boolean isSell() {
-        return sell;
-    }
-
-    public void setSell(boolean sell) {
-        this.sell = sell;
-    }
-
-    public UUID getCreateBy() {
-        return createBy;
-    }
-
-    public void setCreateBy(UUID createBy) {
-        this.createBy = createBy;
-    }
-
-    public Instant getCreateAt() {
-        return createAt;
-    }
-
-    public void setCreateAt(Instant createAt) {
-        this.createAt = createAt;
-    }
-
-    public UUID getUpdateBy() {
-        return updateBy;
-    }
-
-    public void setUpdateBy(UUID updateBy) {
-        this.updateBy = updateBy;
-    }
-
-    public Instant getUpdateAt() {
-        return updateAt;
-    }
-
-    public void setUpdateAt(Instant updateAt) {
-        this.updateAt = updateAt;
     }
 
     public String getStreet() {
@@ -338,19 +270,67 @@ public class RealEstatePost {
         this.street = street;
     }
 
-    public Integer getView() {
-        return view;
+    public Integer getViewCount() {
+        return viewCount;
     }
 
-    public void setView(Integer view) {
-        this.view = view;
+    public void setViewCount(Integer viewCount) {
+        this.viewCount = viewCount;
     }
 
-    public Integer getClickedView() {
-        return clickedView;
+    public Integer getContactCount() {
+        return contactCount;
     }
 
-    public void setClickedView(Integer clickedView) {
-        this.clickedView = clickedView;
+    public void setContactCount(Integer contactCount) {
+        this.contactCount = contactCount;
+    }
+
+    public String getMetadata() {
+        return metadata;
+    }
+
+    public void setMetadata(String metadata) {
+        this.metadata = metadata;
+    }
+
+    public String getEmbedding() {
+        return embedding;
+    }
+
+    public void setEmbedding(String embedding) {
+        this.embedding = embedding;
+    }
+
+    public UUID getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(UUID createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public List<RealEstatePostPrice> getRealEstatePostPrices() {
+        return realEstatePostPrices;
+    }
+
+    public void setRealEstatePostPrices(List<RealEstatePostPrice> realEstatePostPrices) {
+        this.realEstatePostPrices = realEstatePostPrices;
     }
 }

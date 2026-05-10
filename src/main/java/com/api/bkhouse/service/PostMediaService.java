@@ -19,6 +19,10 @@ public class PostMediaService {
         return repository.findByPostId(postId);
     }
 
+    public PostMedia findById(UUID id) {
+        return repository.findByPostId(id).stream().findFirst().orElse(null);
+    }
+
     @Transactional
     public void save(PostMedia postMedia) {
         repository.save(postMedia);
@@ -30,7 +34,7 @@ public class PostMediaService {
     }
 
     @Transactional
-    public void deleteById(String id) {
+    public void deleteById(UUID id) {
         repository.deleteById(id);
     }
 

@@ -12,7 +12,6 @@ import com.api.bkhouse.constant.enumeric.EProjectType;
 import com.api.bkhouse.entity.*;
 import com.api.bkhouse.payload.dto.*;
 import com.api.bkhouse.payload.response.BaseResponse;
-import com.api.bkhouse.service.ChatService;
 import com.api.bkhouse.service.PostReportService;
 import com.api.bkhouse.service.ProjectService;
 import com.api.bkhouse.service.ReportTypeService;
@@ -35,13 +34,13 @@ public class NoAuthController {
     private PostReportService postReportService;
 
     @Autowired
-    private ChatService chatService;
-
-    @Autowired
     private ModelMapper modelMapper;
 
     @Autowired
     private ProjectService projectService;
+
+    private static final UUID ANONYMOUS_USER_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
+    private static final UUID ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
 
     private Logger logger = LoggerFactory.getLogger(NoAuthController.class);
 
@@ -66,7 +65,7 @@ public class NoAuthController {
     @PostMapping("/post-report")
     public ResponseEntity<BaseResponse> create(@RequestBody PostReportDTO body) {
         try {
-            body.setCreateBy(UUID.fromString("anonymous"));
+            body.setCreateBy(ANONYMOUS_USER_ID);
             body.setCreateAt(Util.getCurrentDateTime());
             postReportService.save(modelMapper.map(body, PostReport.class));
             return ResponseEntity.ok(new BaseResponse(
@@ -84,12 +83,20 @@ public class NoAuthController {
     }
 
     @GetMapping("/project/isInterested")
-    public ResponseEntity<BaseResponse> isInterested(@RequestParam("userId") UUID userId,
-                                                     @RequestParam("deviceId") String deviceId,
-                                                     @RequestParam("projectId") UUID projectId) {
+    public ResponseEntity<BaseResponse> isInterested(
+            @RequestParam(value = "userId", required = false) String userIdStr, // BƯỚC 1: Đổi UUID thành String
+            @RequestParam("deviceInfo") String deviceInfo,
+            @RequestParam("projectId") UUID projectId) {
         try {
+            // BƯỚC 2: Tự xử lý ép kiểu bằng tay để chống lỗi chuỗi rỗng "" của Angular
+            UUID currentUserId = ANONYMOUS_USER_ID; // Mặc định là khách ẩn danh
+            
+            if (userIdStr != null && !userIdStr.trim().isEmpty() && !userIdStr.equals("null") && !userIdStr.equals("undefined")) {
+                currentUserId = UUID.fromString(userIdStr); // Nếu có ID thật thì mới ép kiểu
+            }
+            
             return ResponseEntity.ok(new BaseResponse(
-                    projectService.isInterested(userId, projectId, deviceId), "", HttpStatus.OK
+                    projectService.isInterested(currentUserId, projectId, deviceInfo), "", HttpStatus.OK
             ));
         } catch (Exception e) {
             return ResponseEntity.ok(new BaseResponse(
@@ -106,12 +113,11 @@ public class NoAuthController {
             if (!projectService.existsByIdAndEnable(body.getProjectId())) {
                 return ResponseEntity.ok(new BaseResponse(null, "Không tìm thấy bài đăng phù hợp.", HttpStatus.NOT_FOUND));
             }
-            Optional<ProjectInterested> interestedOptional = projectService.findByDeviceInfoAndProjectId(body.getDeviceId(), body.getProjectId());
+            Optional<ProjectInterested> interestedOptional = projectService.findByDeviceInfoAndProjectId(body.getDeviceInfo(), body.getProjectId());
             if (interestedOptional.isEmpty()) {
-                body.setCreateBy(UUID.fromString("anonymous"));
                 body.setCreateAt(Util.getCurrentDateTime());
-                body.setId(0L);
-                body.setUserId(UUID.fromString("anonymous"));
+                body.setId(null);
+                body.setUserId(ANONYMOUS_USER_ID);
                 ProjectInterested interested = modelMapper.map(body, ProjectInterested.class);
                 return ResponseEntity.ok(new BaseResponse(
                         modelMapper.map(projectService.saveInterested(interested), ProjectInterestedDTO.class),
@@ -130,58 +136,6 @@ public class NoAuthController {
         }
     }
 
-    @GetMapping("/chat/chat-room")
-    public ResponseEntity<BaseResponse> findAnonymousChatRoom(@RequestParam UUID userDeviceId) {
-        try {
-            ChatRoom chatRoom = chatService.findAnonymousChatRoom(userDeviceId);
-            return ResponseEntity.ok(new BaseResponse(modelMapper.map(chatRoom, ChatRoomDTO.class), "", HttpStatus.OK));
-        } catch (Exception e) {
-            return ResponseEntity.ok(new BaseResponse(
-                    null,
-                    "Đã xảy ra lỗi khi lấy thông tin cuộc hội thoại với quản trị viên.",
-                    HttpStatus.INTERNAL_SERVER_ERROR));
-        }
-    }
-
-    @GetMapping("/chat/chat-room/detail")
-    public ResponseEntity<BaseResponse> getAnonymousChatRoomDetail(@RequestParam Integer id, @RequestParam String userDeviceId) {
-        try {
-            ChatRoom chatRoom = chatService.findChatRoomById(id);
-            if (chatRoom.isAnonymous() && chatRoom.getFirstUserId().equals(userDeviceId)) {
-                return ResponseEntity.ok(new BaseResponse(modelMapper.map(chatRoom, ChatRoomDTO.class), "", HttpStatus.OK));
-            }
-            return ResponseEntity.ok(new BaseResponse(null, "Bạn không có quyền lấy thông tin của cuộc hội thoại này", HttpStatus.NOT_ACCEPTABLE));
-        } catch (Exception e) {
-            return ResponseEntity.ok(new BaseResponse(
-                    null,
-                    "Đã xảy ra lỗi khi lấy thông tin cuộc hội thoại với quản trị viên.",
-                    HttpStatus.INTERNAL_SERVER_ERROR));
-        }
-    }
-
-    @PostMapping("/chat/message")
-    public ResponseEntity<BaseResponse> createAnonymousMessage(@RequestBody MessageDTO messageDTO) {
-        try {
-            ChatRoom chatRoom = chatService.findChatRoomById(messageDTO.getChatRoomId());
-            if (chatRoom == null) {
-                return ResponseEntity.ok(new BaseResponse(null, "Không tìm thấy thông tin cuộc trò chuyện", HttpStatus.NO_CONTENT));
-            }
-            messageDTO.setCreateAt(Util.getCurrentDateTime());
-            Message message = modelMapper.map(messageDTO, Message.class);
-            message.setChatRoom(chatRoom);
-            message.setId(0L);
-            Message response = chatService.saveMessage(message);
-            logger.info("Thoi gian lop Util: {}", response.getCreateAt().toString());
-            logger.info("Thoi gian Instant.now(): {}", Instant.now().toString());
-            return ResponseEntity.ok(new BaseResponse(response, "", HttpStatus.OK));
-        } catch (Exception e) {
-            return ResponseEntity.ok(new BaseResponse(
-                    null,
-                    "Đã xảy ra lỗi khi gửi tin nhắn " + e.getMessage(),
-                    HttpStatus.INTERNAL_SERVER_ERROR
-            ));
-        }
-    }
 
     @GetMapping("/project/type")
     public ResponseEntity<BaseResponse> findByType(@RequestParam Integer page, @RequestParam Integer pageSize, @RequestParam String type) {
@@ -204,15 +158,7 @@ public class NoAuthController {
             if (!projectService.existsByIdAndEnable(id)) {
                 return ResponseEntity.ok(new BaseResponse(null, "Không tìm thấy thông tin dự án", HttpStatus.OK));
             }
-//            Project project = projectService.findById(id, true);
-//            if (project == null) {
-//                return ResponseEntity.ok(new BaseResponse(
-//                        null,
-//                        "Không tìm thấy bài viết",
-//                        HttpStatus.NO_CONTENT
-//                ));
-//            }
-//            return ResponseEntity.ok(new BaseResponse(modelMapper.map(project, ProjectDTO.class), "", HttpStatus.OK));
+
             Long increaseViewId = projectService.increaseView(id);
             return ResponseEntity.ok(new BaseResponse(increaseViewId, "", HttpStatus.OK));
         } catch (Exception e) {

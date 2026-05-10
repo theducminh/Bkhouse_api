@@ -6,8 +6,9 @@ import org.springframework.stereotype.Repository;
 import com.api.bkhouse.entity.Charge;
 
 import java.util.List;
+import java.util.UUID;
 
 @Repository
 public interface ChargeRepository extends JpaRepository<Charge,Long> {
-    List<Charge> findByUserIdOrderByCreateAtDesc(String userId);
+    List<Charge> findByUserIdOrderByCreateAtDesc(UUID userId);
 }

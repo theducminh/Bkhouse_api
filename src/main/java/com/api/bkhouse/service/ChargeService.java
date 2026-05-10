@@ -8,6 +8,7 @@ import com.api.bkhouse.entity.Charge;
 import com.api.bkhouse.repository.ChargeRepository;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class ChargeService {
@@ -28,7 +29,11 @@ public class ChargeService {
         return repository.findAll();
     }
 
-    public List<Charge> findByUserId(String userId) {
+    public List<Charge> findByUserId(UUID userId) {
         return repository.findByUserIdOrderByCreateAtDesc(userId);
+    }
+
+    public Charge findById(Long id) {
+        return repository.findById(id).orElse(null);
     }
 }

@@ -175,16 +175,17 @@ public class RealEstatePostController {
             Role role = new Role();
             role.setId(1);
             role.setName(ERole.ROLE_USER);
+
             if (!agencyPeriodPriority(user, request.getRealEstatePost().getDistrict().getCode())
                     && user.getRoles().contains(role)) {
-                if (user.getAccountBalance() < Util.calculatePostPrice(realEstatePostDTO.getPriority(), realEstatePostDTO.getPeriod(), realEstatePostDTO.isSell())) {
+                if (user.getAccountBalance() < Util.calculatePostPrice(realEstatePostDTO.getPriority(), 60, realEstatePostDTO.getIsSell())) {
                     return ResponseEntity.ok(new BaseResponse(null,
                             "Số dư trong tài khoản không đủ để thực hiện giao dịch.",
                             HttpStatus.INTERNAL_SERVER_ERROR));
                 }
             }
-            realEstatePostDTO.setCreateAt(Util.getCurrentDateTime());
-            realEstatePostDTO.setCreateBy(userDetails.getId());
+            realEstatePostDTO.setCreatedAt(Util.getCurrentDateTime());
+            realEstatePostDTO.setCreatedBy(userDetails.getId());
             RealEstatePost realEstatePost = modelMapper.map(realEstatePostDTO, RealEstatePost.class);
             service.create(realEstatePost);
 
@@ -208,10 +209,10 @@ public class RealEstatePostController {
             }
             if (!agencyPeriodPriority(user, request.getRealEstatePost().getDistrict().getCode())
                 && user.getRoles().contains(role)) {
-                int pay = Util.calculatePostPrice(realEstatePostDTO.getPriority(), realEstatePostDTO.getPeriod(), realEstatePostDTO.isSell());
+                int pay = Util.calculatePostPrice(realEstatePostDTO.getPriority(), 60, realEstatePostDTO.getIsSell());
                 if (pay > 0) {
                     PostPay postPay = new PostPay();
-                    postPay.setId(0L);
+                    postPay.setId(null);
                     postPay.setUser(user);
                     postPay.setRealEstatePost(realEstatePost);
                     postPay.setPrice(pay);
@@ -264,8 +265,8 @@ public class RealEstatePostController {
             Double currPrice = realEstatePostDB.getPrice();
 
             RealEstatePostDTO realEstatePostDTO = request.getRealEstatePost();
-            realEstatePostDTO.setUpdateAt(Util.getCurrentDateTime());
-            realEstatePostDTO.setUpdateBy(userDetails.getId());
+            realEstatePostDTO.setUpdatedAt(Util.getCurrentDateTime());
+            realEstatePostDTO.setCreatedBy(userDetails.getId());
             RealEstatePost realEstatePost = convertToEntity(realEstatePostDTO);
             service.update(realEstatePost);
             if (realEstatePostDTO.getType().equals(EType.PLOT)) {
@@ -312,28 +313,26 @@ public class RealEstatePostController {
         realEstatePost.setArea(realEstatePostDTO.getArea());
         realEstatePost.setAddressShow(realEstatePostDTO.getAddressShow());
         realEstatePost.setDescription(realEstatePostDTO.getDescription());
-        realEstatePost.setClickedView(realEstatePostDTO.getClickedView());
-        realEstatePost.setEnable(realEstatePostDTO.isEnable());
+        realEstatePost.setContactCount(realEstatePostDTO.getContactCount());
+        realEstatePost.setEnabled(realEstatePostDTO.getIsEnabled());
         realEstatePost.setDistrict(modelMapper.map(realEstatePostDTO.getDistrict(), District.class));
         realEstatePost.setDirection(realEstatePostDTO.getDirection());
-        realEstatePost.setLat(realEstatePostDTO.getLat());
-        realEstatePost.setLng(realEstatePostDTO.getLng());
+        realEstatePost.setLocation(realEstatePostDTO.getLocation());
         realEstatePost.setPrice(realEstatePostDTO.getPrice());
-        realEstatePost.setCreateAt(realEstatePostDTO.getCreateAt());
-        realEstatePost.setCreateBy(realEstatePostDTO.getCreateBy());
+        realEstatePost.setCreatedAt(realEstatePostDTO.getCreatedAt());
+        realEstatePost.setCreatedBy(realEstatePostDTO.getCreatedBy());
         realEstatePost.setId(realEstatePostDTO.getId());
         realEstatePost.setOwnerId(modelMapper.map(realEstatePostDTO.getOwnerId(), User.class));
-        realEstatePost.setPeriod(realEstatePostDTO.getPeriod());
         realEstatePost.setPriority(realEstatePostDTO.getPriority());
         realEstatePost.setProvince(modelMapper.map(realEstatePostDTO.getProvince(), Province.class));
-        realEstatePost.setSell(realEstatePostDTO.isSell());
+        realEstatePost.setSell(realEstatePostDTO.getIsSell());
         realEstatePost.setStatus(realEstatePostDTO.getStatus());
         realEstatePost.setStreet(realEstatePostDTO.getStreet());
         realEstatePost.setTitle(realEstatePostDTO.getTitle());
         realEstatePost.setType(realEstatePostDTO.getType());
-        realEstatePost.setUpdateAt(realEstatePostDTO.getUpdateAt());
-        realEstatePost.setUpdateBy(realEstatePostDTO.getUpdateBy());
-        realEstatePost.setView(realEstatePostDTO.getView());
+        realEstatePost.setUpdatedAt(realEstatePostDTO.getUpdatedAt());
+        realEstatePost.setCreatedBy(realEstatePostDTO.getCreatedBy());
+        realEstatePost.setViewCount(realEstatePostDTO.getViewCount());
         realEstatePost.setWard(modelMapper.map(realEstatePostDTO.getWard(), Ward.class));
         return realEstatePost;
     }
@@ -446,12 +445,12 @@ public class RealEstatePostController {
     public ResponseEntity<BaseResponse> disableOrEnablePostById(@PathVariable("id") UUID id) {
         try {
             RealEstatePost realEstatePost = service.findById(id);
-            if (realEstatePost.isEnable()) {
-                realEstatePost.setEnable(false);
+            if (realEstatePost.getEnabled()) {
+                realEstatePost.setEnabled(false);
                 service.update(realEstatePost);
                 return ResponseEntity.ok(new BaseResponse(0, "Ẩn bài viết thành công", HttpStatus.OK));
             } else {
-                realEstatePost.setEnable(true);
+                realEstatePost.setEnabled(true);
                 service.update(realEstatePost);
                 return ResponseEntity.ok(new BaseResponse(1, "Hiện bài viết thành công", HttpStatus.OK));
             }
@@ -507,7 +506,7 @@ public class RealEstatePostController {
                 return ResponseEntity.ok(new BaseResponse(null, "Không thể đánh dấu đã hoàn thành cho bài viết vì bài viết không ở trạng thái đã kiểm duyệt.", HttpStatus.NOT_ACCEPTABLE));
             }
             service.updatePostStatus(EStatus.DA_HOAN_THANH.toString(), realEstatePostId);
-            notifyService.thongBaoHoanThanhBaiDang("Bài viết " + realEstatePost.getTitle() + " đã được " + (realEstatePost.isSell() ? "bán" : "cho thuê"), realEstatePostId);
+            notifyService.thongBaoHoanThanhBaiDang("Bài viết " + realEstatePost.getTitle() + " đã được " + (realEstatePost.getSell() ? "bán" : "cho thuê"), realEstatePostId);
             return ResponseEntity.ok(new BaseResponse(
                     EStatus.DA_HOAN_THANH.toString(),
                     "Cập nhật trạng thái bài viết thành công.",
@@ -568,11 +567,11 @@ public class RealEstatePostController {
             if (!service.existsByIdAndEnable(body.getRealEstatePostId())) {
                 return ResponseEntity.ok(new BaseResponse(null, "Không tìm thấy bài đăng phù hợp.", HttpStatus.NOT_FOUND));
             }
-            Optional<Interested> interestedOptional = service.findByDeviceIdAndRealEstatePostId(body.getDeviceId(), body.getRealEstatePostId());
+            Optional<Interested> interestedOptional = service.findByDeviceInfoAndRealEstatePostId(body.getDeviceInfo(), body.getRealEstatePostId());
             if (interestedOptional.isEmpty()) {
                 body.setCreateBy(UUID.fromString("00000000-0000-0000-0000-000000000000"));
                 body.setCreateAt(Util.getCurrentDateTime());
-                body.setId(0L);
+                body.setId(null);
                 body.setUserId(UUID.fromString("00000000-0000-0000-0000-000000000000"));
                 Interested interested = modelMapper.map(body, Interested.class);
                 return ResponseEntity.ok(new BaseResponse(
@@ -603,7 +602,7 @@ public class RealEstatePostController {
             if (interestedOptional.isEmpty()) {
                 body.setCreateBy(userDetails.getId());
                 body.setCreateAt(Util.getCurrentDateTime());
-                body.setId(0L);
+                body.setId(null);
                 body.setUserId(userDetails.getId());
                 Interested interested = modelMapper.map(body, Interested.class);
                 return ResponseEntity.ok(new BaseResponse(
@@ -692,7 +691,7 @@ public class RealEstatePostController {
     @GetMapping("/api/no-auth/real-estate-post/detailPageData")
     public ResponseEntity<BaseResponse> detailPageData(@RequestParam("userId") UUID userId,
                                                        @RequestParam("deviceInfo") String deviceInfo,
-                                                       @RequestParam("sell") Byte sell,
+                                                       @RequestParam("sell") Boolean sell,
                                                        @RequestParam("type") String type,
                                                        @RequestParam("limit") Integer limit,
                                                        @RequestParam("offset") Integer offset) {
@@ -710,7 +709,7 @@ public class RealEstatePostController {
     }
 
     @GetMapping("/api/no-auth/real-estate-post/countTotalBySellAndTypeClient")
-    public ResponseEntity<BaseResponse> detailPageData(@RequestParam("sell") Byte sell,
+    public ResponseEntity<BaseResponse> detailPageData(@RequestParam("sell") Boolean sell,
                                                        @RequestParam("type") String type) {
         try {
             return ResponseEntity.ok(new BaseResponse(

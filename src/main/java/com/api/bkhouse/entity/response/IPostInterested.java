@@ -5,7 +5,10 @@ public interface IPostInterested {
     String getType();
     String getTitle();
     String getArea();
-    Byte getIsSell();
+    
+    // Đã sửa: Byte -> Boolean
+    Boolean getIsSell(); 
+    
     Double getPrice();
     String getAddressShow();
 }

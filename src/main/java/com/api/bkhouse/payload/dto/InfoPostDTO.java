@@ -1,6 +1,7 @@
 package com.api.bkhouse.payload.dto;
 
 import java.time.Instant;
+import java.util.UUID;
 
 public class InfoPostDTO {
     private Long id;
@@ -10,9 +11,8 @@ public class InfoPostDTO {
     private String content;
     private String imageUrl;
     private Integer view;
-    private String createBy;
+    private UUID createBy;
     private Instant createAt;
-    private String updateBy;
     private Instant updateAt;
 
     public Long getId() {
@@ -55,11 +55,11 @@ public class InfoPostDTO {
         this.content = content;
     }
 
-    public String getCreateBy() {
+    public UUID getCreateBy() {
         return createBy;
     }
 
-    public void setCreateBy(String createBy) {
+    public void setCreateBy(UUID createBy) {
         this.createBy = createBy;
     }
 
@@ -71,13 +71,6 @@ public class InfoPostDTO {
         this.createAt = createAt;
     }
 
-    public String getUpdateBy() {
-        return updateBy;
-    }
-
-    public void setUpdateBy(String updateBy) {
-        this.updateBy = updateBy;
-    }
 
     public Instant getUpdateAt() {
         return updateAt;

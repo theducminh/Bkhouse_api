@@ -7,25 +7,23 @@ import java.util.List;
 import java.util.UUID;
 
 public class ChatRoomDTO {
-    @NotBlank
     @NotNull
     private Integer id;
-    @NotBlank
+
+    
     @NotNull
     private UUID firstUserId;
-    @NotBlank
+    
     @NotNull
     private UUID secondUserId;
     @NotBlank
     @NotNull
     private boolean enable;
-    @NotNull
-    @NotBlank
+   
     private boolean anonymous;
     private List<MessageDTO> messages;
     private UUID createBy;
     private Instant createAt;
-    private UUID updateBy;
     private Instant updateAt;
 
     public Integer getId() {
@@ -74,14 +72,6 @@ public class ChatRoomDTO {
 
     public void setCreateAt(Instant createAt) {
         this.createAt = createAt;
-    }
-
-    public UUID getUpdateBy() {
-        return updateBy;
-    }
-
-    public void setUpdateBy(UUID updateBy) {
-        this.updateBy = updateBy;
     }
 
     public Instant getUpdateAt() {

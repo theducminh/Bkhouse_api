@@ -34,25 +34,49 @@ public class ProjectController {
     @Autowired
     private ModelMapper modelMapper;
 
-    @PostMapping
+   @PostMapping
     @PreAuthorize("hasRole('ROLE_ENTERPRISE')")
     public ResponseEntity<BaseResponse> create(@RequestBody ProjectDTO body, @CurrentUser UserDetailsImpl userDetails) {
         try {
+            UUID currentUserId = userDetails.getId();
+
+            // Chặn lỗi ID của Project bị rỗng
+            body.setId(null); 
+
+            // BƯỚC MỚI: Chặn lỗi projectId rỗng bên trong ProjectParams
+            if (body.getProjectParams() != null) {
+                body.getProjectParams().forEach(param -> {
+                    if (param.getProjectId() != null && param.getProjectId().trim().isEmpty()) {
+                        param.setProjectId(null); // Gán thành null để ModelMapper bỏ qua, không ép kiểu
+                    }
+                });
+            }
+
+            body.setCreateBy(currentUserId);
+            body.setCreateAt(Util.getCurrentDateTime());
+            
+            // Chạy ModelMapper an toàn
             Project project = modelMapper.map(body, Project.class);
+            
             UUID id = UUID.randomUUID();
             project.setId(id);
             project.setEnable(true);
+            project.setCreateBy(currentUserId);
             project.setCreateAt(Util.getCurrentDateTime());
-            project
-                    .getProjectParams()
+            
+            if (project.getProjectParams() != null) {
+                project.getProjectParams()
                         .stream()
                         .parallel()
                         .forEach(e -> {
-                            if (e.getId() < 0) {
-                                e.setId(0L);
+                            if (e.getId() == null || e.getId() < 0) {
+                                e.setId(null);
                             }
-                            e.getProject().setId(id);
+                            // Gắn ngược lại Project vào Param (Hibernate cần cái này để lưu khóa ngoại)
+                            e.setProject(project); 
                         });
+            }
+            
             projectService.save(project);
             return ResponseEntity.ok(new BaseResponse(id, "Tạo dự án thành công.", HttpStatus.OK));
         } catch (Exception e) {
@@ -85,7 +109,7 @@ public class ProjectController {
                 }
                 if ((e.getId() > 0 && !projectService.paramExistsByIdAndProjectId(e.getId(), e.getProject().getId()))
                 || e.getId() < 0) {
-                    e.setId(0L);
+                    e.setId(null);
                     e.getProject().setId(project.getId());
                 }
             }
@@ -146,10 +170,15 @@ public class ProjectController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN')" + " or " + "hasRole('ROLE_ENTERPRISE')") 
     public ResponseEntity<BaseResponse> findAll() {
         try {
             List<Project> projects = projectService.findAll();
+            projects.forEach(project -> {
+                if (project.getProjectParams() != null) {
+                    project.getProjectParams().forEach(param -> param.setProject(null));
+                }
+            });
             List<ProjectDTO> response = projects
                     .stream()
                     .map(e -> modelMapper.map(e, ProjectDTO.class)).toList();
@@ -167,6 +196,11 @@ public class ProjectController {
     public ResponseEntity<BaseResponse> findByUser(@CurrentUser UserDetailsImpl userDetails) {
         try {
             List<Project> projects = projectService.findByUserId(userDetails.getId());
+            projects.forEach(project -> {
+                if (project.getProjectParams() != null) {
+                    project.getProjectParams().forEach(param -> param.setProject(null));
+                }
+            });
             List<ProjectDTO> response = projects
                     .stream()
                     .map(e -> modelMapper.map(e, ProjectDTO.class))
@@ -181,7 +215,7 @@ public class ProjectController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ROLE_ENTERPRISE')")
+    @PreAuthorize("hasRole('ROLE_ENTERPRISE') or hasRole('ROLE_ADMIN')")
     public ResponseEntity<BaseResponse> findById(@PathVariable UUID id) {
         try {
             Project project = projectService.findById(id);
@@ -209,9 +243,8 @@ public class ProjectController {
             }
             Optional<ProjectInterested> interestedOptional = projectService.findByUserIdAndRealEstatePostId(userDetails.getId(), body.getProjectId());
             if (interestedOptional.isEmpty()) {
-                body.setCreateBy(userDetails.getId());
                 body.setCreateAt(Util.getCurrentDateTime());
-                body.setId(0L);
+                body.setId(null);
                 body.setUserId(userDetails.getId());
                 ProjectInterested interested = modelMapper.map(body, ProjectInterested.class);
                 return ResponseEntity.ok(new BaseResponse(

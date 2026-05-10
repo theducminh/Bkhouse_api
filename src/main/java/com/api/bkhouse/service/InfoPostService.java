@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class InfoPostService {
@@ -52,7 +53,7 @@ public class InfoPostService {
         return infoPostOptional.get();
     }
 
-    public List<InfoPost> findByUserId(String userId) {
+    public List<InfoPost> findByUserId(UUID userId) {
         List<InfoPost> infoPosts = repository.findByCreateByOrderByCreateAtDesc(userId);
         return infoPosts;
     }

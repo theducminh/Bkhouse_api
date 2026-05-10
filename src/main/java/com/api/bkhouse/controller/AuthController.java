@@ -21,6 +21,8 @@ import com.api.bkhouse.payload.response.BaseResponse;
 import com.api.bkhouse.service.AuthService;
 import com.api.bkhouse.service.UserDeviceTokenService;
 import com.api.bkhouse.util.Util;
+import java.util.Map;
+
 
 
 @CrossOrigin(origins = "*", maxAge = 3600)
@@ -39,6 +41,25 @@ public class AuthController {
     @PostMapping("/signin")
     public ResponseEntity<BaseResponse> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
         return ResponseEntity.ok(authService.authenticateUser(loginRequest));
+    }
+
+    @Operation(summary = "Đăng nhập bằng Google")
+    @PostMapping("/google")
+    public ResponseEntity<BaseResponse> loginWithGoogle(@RequestBody Map<String, String> payload) {
+        String idTokenString = payload.get("idToken");
+        String deviceInfo = payload.get("deviceInfo");
+
+        if (idTokenString == null || idTokenString.isEmpty()) {
+            return ResponseEntity.badRequest().body(new BaseResponse(null, "Thiếu idToken", HttpStatus.BAD_REQUEST));
+        }
+        // Gọi sang Service để xử lý logic
+        BaseResponse response = authService.processGoogleLogin(idTokenString, deviceInfo);
+        
+        if (response.getStatus() == HttpStatus.OK.value()) {
+            return ResponseEntity.ok(response);
+        } else {
+            return ResponseEntity.status(response.getStatus()).body(response);
+        }
     }
 
     @Operation(summary = "Đăng ký tài khoản mới")
@@ -64,7 +85,7 @@ public class AuthController {
     public ResponseEntity<BaseResponse> logout(@RequestBody UserDeviceTokenDTO userDeviceTokenDTO) {
         try {
             UserDeviceToken userDeviceToken = userDeviceTokenService
-                    .findByUserIdAndDeviceId(userDeviceTokenDTO.getUserId(), userDeviceTokenDTO.getDeviceInfo());
+                    .findByUserIdAndDeviceInfo(userDeviceTokenDTO.getUserId(), userDeviceTokenDTO.getDeviceInfo());
             if (userDeviceToken == null) {
                 return ResponseEntity.ok(new BaseResponse(null, "", HttpStatus.OK));
             }

@@ -9,8 +9,8 @@ import java.util.UUID;
 public interface ProjectParamRepository extends JpaRepository<ProjectParam, Long> {
     boolean existsByIdAndProjectId(Long id, UUID projectId);
     @Query(value = "select count(p.id) " +
-            "from project_param pp inner join project p on pp.project_id = p.id " +
+            "from project_param pp inner join projects p on pp.project_id = p.id " +
             "where pp.id = :id " +
-            "and p.create_by = :userId", nativeQuery = true)
+            "and p.created_by = :userId", nativeQuery = true)
     long paramIsBelongToUser(Long id, UUID userId);
 }

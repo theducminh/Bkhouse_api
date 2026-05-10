@@ -91,7 +91,7 @@ public class PriceFluctuationController {
                         HttpStatus.NO_CONTENT));
             }
             PriceFluctuation priceFluctuation = new PriceFluctuation();
-            priceFluctuation.setId(0L);
+            priceFluctuation.setId(null);
             priceFluctuation.setDistrictPrice(0L);
             priceFluctuation.setCreateAt(Util.getCurrentDateTime());
             priceFluctuation.setEnable(true);
@@ -131,7 +131,7 @@ public class PriceFluctuationController {
             service.deleteByUserId(request.getUserId());
 
             PriceFluctuation priceFluctuation = new PriceFluctuation();
-            priceFluctuation.setId(0L);
+            priceFluctuation.setId(null);
             priceFluctuation.setDistrictPrice(0L);
             priceFluctuation.setCreateAt(Util.getCurrentDateTime());
             priceFluctuation.setEnable(true);

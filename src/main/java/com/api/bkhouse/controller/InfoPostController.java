@@ -26,6 +26,7 @@ import com.api.bkhouse.util.Util;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
@@ -175,7 +176,7 @@ public class InfoPostController {
     }
 
     @GetMapping("/api/v1/info-post/enterprise/{id}")
-    public ResponseEntity<BaseResponse> getInfoPostByUserId(@PathVariable("id") String userId) {
+    public ResponseEntity<BaseResponse> getInfoPostByUserId(@PathVariable("id") UUID userId) {
         try {
             List<InfoPost> infoPosts = service.findByUserId(userId);
             return ResponseEntity.ok(new BaseResponse(
@@ -334,7 +335,6 @@ public class InfoPostController {
         infoPostResponse.setTitle(infoPostDTO.getTitle());
         infoPostResponse.setImageUrl(infoPostDTO.getImageUrl());
         infoPostResponse.setView(infoPostDTO.getView());
-        infoPostResponse.setUpdateBy(infoPostDTO.getUpdateBy());
         infoPostResponse.setCreateAt(infoPostDTO.getCreateAt());
         infoPostResponse.setUpdateAt(infoPostDTO.getUpdateAt());
 

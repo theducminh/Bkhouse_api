@@ -16,11 +16,9 @@ public class ChargeDTO {
     private UserDTO user;
 
     @NotNull
-    @NotBlank
     private Long accountBalance;
 
     @NotNull
-    @NotBlank
     private EChargeType chargeType;
 
     private String createBy;
@@ -28,7 +26,6 @@ public class ChargeDTO {
     private Instant createAt;
 
     @NotNull
-    @NotBlank
     private EChargeStatus status;
 
     private String imageUrl;

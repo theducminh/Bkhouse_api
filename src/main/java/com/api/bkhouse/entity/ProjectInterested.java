@@ -15,12 +15,12 @@ public class ProjectInterested {
     private UUID userId;
 
     @Column(name = "device_id")
-    private String deviceId;
+    private String deviceInfo;
 
     @Column(name = "project_id")
     private UUID projectId;
 
-    @Column(name = "create_at", updatable = false)
+    @Column(name = "created_at", updatable = false)
     private Instant createAt;
 
     public Long getId() {
@@ -40,11 +40,11 @@ public class ProjectInterested {
     }
 
     public String getDeviceInfo() {
-        return deviceId;
+        return deviceInfo;
     }
 
-    public void setDeviceInfo(String deviceId) {
-        this.deviceId = deviceId;
+    public void setDeviceInfo(String deviceInfo) {
+        this.deviceInfo = deviceInfo;
     }
 
     public UUID getProjectId() {

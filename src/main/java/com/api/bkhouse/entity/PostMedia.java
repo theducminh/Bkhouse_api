@@ -3,54 +3,46 @@ package com.api.bkhouse.entity;
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
-
-import com.api.bkhouse.constant.enumeric.EPostType;
 import java.util.UUID;
 
 @Entity
-@Table(name = "post_media")
+@Table(name = "post_media", indexes = {
+    @Index(name = "idx_post_media_post_id", columnList = "post_id")
+})
 public class PostMedia {
+
     @Id
-    @Column(name = "id")
-    @NotNull
-    @NotBlank
-    private String id;
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(name = "id", updatable = false, nullable = false)
+    private UUID id;
 
-    @Column(name = "media_type")
-    @NotNull
-    @NotBlank
-    private String mediaType;
-
-    @Column(name = "post_id")
-    @NotNull
-    @NotBlank
+    // KHÔNG dùng @ManyToOne ở đây vì nó trỏ tới 2 bảng khác nhau. 
+    // Chỉ lưu ID dưới dạng biến bình thường.
+    @Column(name = "post_id", nullable = false)
+    @NotNull(message = "ID bài viết không được để trống")
     private UUID postId;
 
-    @Column(name = "post_type")
-    @Enumerated(EnumType.STRING)
-    @NotNull
-    @NotBlank
-    private EPostType postType;
+    @Column(name = "media_url", columnDefinition = "TEXT", nullable = false)
+    @NotBlank(message = "Đường dẫn media không được để trống")
+    private String mediaUrl;
 
-    @Column(name = "name")
-    @NotNull
-    @NotBlank
-    private String name;
+    @Column(name = "media_type", length = 20, nullable = false)
+    @NotBlank(message = "Loại media không được để trống")
+    private String mediaType;
 
-    public String getId() {
+    @Column(name = "is_thumbnail")
+    private Boolean isThumbnail;
+
+    // ==========================================
+    // GETTERS & SETTERS
+    // ==========================================
+
+    public UUID getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(UUID id) {
         this.id = id;
-    }
-
-    public String getMediaType() {
-        return mediaType;
-    }
-
-    public void setMediaType(String mediaType) {
-        this.mediaType = mediaType;
     }
 
     public UUID getPostId() {
@@ -61,19 +53,27 @@ public class PostMedia {
         this.postId = postId;
     }
 
-    public EPostType getPostType() {
-        return postType;
+    public String getMediaUrl() {
+        return mediaUrl;
     }
 
-    public void setPostType(EPostType postType) {
-        this.postType = postType;
+    public void setMediaUrl(String mediaUrl) {
+        this.mediaUrl = mediaUrl;
     }
 
-    public String getName() {
-        return name;
+    public String getMediaType() {
+        return mediaType;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setMediaType(String mediaType) {
+        this.mediaType = mediaType;
+    }
+
+    public Boolean getIsThumbnail() {
+        return isThumbnail; // Spring Data JPA sẽ tự map với is_thumbnail
+    }
+
+    public void setIsThumbnail(Boolean isThumbnail) {
+        this.isThumbnail = isThumbnail;
     }
 }

@@ -1,43 +1,53 @@
 package com.api.bkhouse.entity;
 
+import com.api.bkhouse.constant.enumeric.EPostType; // Kế thừa Enum từ thiết kế PostMedia
+
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(name = "post_comment")
 public class PostComment {
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // 1. CHUYỂN String THÀNH UUID
     @Column(name = "post_id")
-    @NotNull
-    @NotBlank
-    private String postId;
+    @NotNull(message = "Post ID không được để trống")
+    private UUID postId;
 
-    @Column(name = "content")
+    // 2. THAY THẾ isForumPost BẰNG postType (Polymorphism)
+    @Column(name = "post_type")
+    @Enumerated(EnumType.STRING)
+    @NotNull(message = "Post Type không được để trống")
+    private EPostType postType;
+
+    // 3. THAY THẾ createBy (String) BẰNG userId (UUID) để làm Khóa ngoại
+    @Column(name = "user_id")
+    @NotNull(message = "User ID không được để trống")
+    private UUID userId;
+
+    @Column(name = "content", columnDefinition = "TEXT")
     @NotNull
-    @NotBlank
+    @NotBlank(message = "Nội dung bình luận không được để trống")
     private String content;
 
-    @Column(name = "is_forum_post")
-    @NotNull
-    @NotBlank
-    private boolean isForumPost;
+    // 4. CHUẨN HÓA TÊN BIẾN (createAt -> createdAt)
+    @Column(name = "created_at", updatable = false)
+    private Instant createdAt;
 
-    @Column(name = "create_by", updatable = false)
-    private String createBy;
+    @Column(name = "updated_at")
+    private Instant updatedAt;
 
-    @Column(name = "create_at", updatable = false)
-    private Instant createAt;
 
-    @Column(name = "update_by")
-    private String updateBy;
-
-    @Column(name = "update_at")
-    private Instant updateAt;
+    // ==========================================
+    // GETTERS & SETTERS
+    // ==========================================
 
     public Long getId() {
         return id;
@@ -47,12 +57,28 @@ public class PostComment {
         this.id = id;
     }
 
-    public String getPostId() {
+    public UUID getPostId() {
         return postId;
     }
 
-    public void setPostId(String postId) {
+    public void setPostId(UUID postId) {
         this.postId = postId;
+    }
+
+    public EPostType getPostType() {
+        return postType;
+    }
+
+    public void setPostType(EPostType postType) {
+        this.postType = postType;
+    }
+
+    public UUID getUserId() {
+        return userId;
+    }
+
+    public void setUserId(UUID userId) {
+        this.userId = userId;
     }
 
     public String getContent() {
@@ -63,43 +89,19 @@ public class PostComment {
         this.content = content;
     }
 
-    public boolean isForumPost() {
-        return isForumPost;
+    public Instant getCreatedAt() {
+        return createdAt;
     }
 
-    public void setForumPost(boolean forumPost) {
-        isForumPost = forumPost;
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
     }
 
-    public String getCreateBy() {
-        return createBy;
+    public Instant getUpdatedAt() {
+        return updatedAt;
     }
 
-    public void setCreateBy(String createBy) {
-        this.createBy = createBy;
-    }
-
-    public Instant getCreateAt() {
-        return createAt;
-    }
-
-    public void setCreateAt(Instant createAt) {
-        this.createAt = createAt;
-    }
-
-    public String getUpdateBy() {
-        return updateBy;
-    }
-
-    public void setUpdateBy(String updateBy) {
-        this.updateBy = updateBy;
-    }
-
-    public Instant getUpdateAt() {
-        return updateAt;
-    }
-
-    public void setUpdateAt(Instant updateAt) {
-        this.updateAt = updateAt;
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

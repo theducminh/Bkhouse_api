@@ -1,21 +1,23 @@
 package com.api.bkhouse.entity;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "special_account")
+@Table(name = "special_accounts")
 public class SpecialAccount {
     @Id
     @Column(name = "user_id")
     private UUID userId;
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @MapsId
+    @JoinColumn(name = "user_id", referencedColumnName = "id")
+    private User user;
+
     @Column(name = "monthly_charge")
-    private Integer monthlyCharge;
+    private int monthlyCharge;
 
     @Column(name = "is_agency")
     private boolean agency;
@@ -34,11 +36,20 @@ public class SpecialAccount {
         this.userId = userId;
     }
 
-    public Integer getMonthlyCharge() {
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+
+    public int getMonthlyCharge() {
         return monthlyCharge;
     }
 
-    public void setMonthlyCharge(Integer monthlyCharge) {
+    public void setMonthlyCharge(int monthlyCharge) {
         this.monthlyCharge = monthlyCharge;
     }
 

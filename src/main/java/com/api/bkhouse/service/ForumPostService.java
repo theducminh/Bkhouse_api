@@ -141,7 +141,7 @@ public class ForumPostService {
                 String query = "select count(*) as cnt\n" +
                         "from forum_post \n" +
                         "where month(create_at) = :month\n" +
-                        "and year(create_at) = :year";
+                        "and extract(year from create_at) = :year";
                 Map<String, Object> params = new HashMap<>();
                 params.put("month", i);
                 params.put("year", year);
@@ -192,17 +192,17 @@ public class ForumPostService {
         if (mapType.equals("COMMENT")) {
             query = "select count(*) as cnt\n" +
                     "from post_comment pc inner join forum_post fp on pc.post_id = fp.id\n" +
-                    "where year(pc.create_at) = :year\n" +
+                    "where extract(year from pc.create_at) = :year\n" +
                     "and month(pc.create_at) = :month";
         } else if (mapType.equals("LIKE")) {
             query = "select count(*) as cnt\n" +
                     "from forum_post_like fpl\n" +
-                    "where year(fpl.create_at) = :year\n" +
+                    "where extract(year from fpl.create_at) = :year\n" +
                     "and month(fpl.create_at) = :month";
         } else {
             query = "select count(*) as cnt\n" +
                     "from post_report pc inner join forum_post fp on pc.post_id = fp.id\n" +
-                    "where year(pc.create_at) = :year\n" +
+                    "where extract(year from pc.create_at) = :year\n" +
                     "and month(pc.create_at) = :month";
         }
         Map<String, Object> params = new HashMap<>();

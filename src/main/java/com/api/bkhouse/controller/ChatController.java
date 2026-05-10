@@ -47,7 +47,7 @@ public class ChatController {
                         HttpStatus.CREATED
                 ));
             }
-            chatRoomDTO.setId(0);
+            chatRoomDTO.setId(null);
             chatRoomDTO.setEnable(true);
             chatRoomDTO.setCreateBy(userDetails.getId());
             chatRoomDTO.setCreateAt(Util.getCurrentDateTime());
@@ -98,7 +98,6 @@ public class ChatController {
             }
             chatRoom.setEnable(Boolean.FALSE);
             chatRoom.setUpdateAt(Util.getCurrentDateTime());
-            chatRoom.setUpdateBy(userDetails.getId());
             chatService.createChatRoom(chatRoom);
             return ResponseEntity.ok(new BaseResponse(chatRoom.getId(), "Xóa cuộc hội thoại thành công.", HttpStatus.OK));
         } catch (Exception e) {
@@ -137,10 +136,10 @@ public class ChatController {
                 return ResponseEntity.ok(new BaseResponse(null, "Bạn không có quyền gửi tin nhắn", HttpStatus.NOT_ACCEPTABLE));
             }
             messageDTO.setCreateAt(Util.getCurrentDateTime());
-            messageDTO.setCreateBy(userDetails.getId());
+            messageDTO.setCreateBy(userDetails.getId().toString());
             Message message = modelMapper.map(messageDTO, Message.class);
             message.setChatRoom(chatRoom);
-            message.setId(0L);
+            message.setId(null);
             Message response = chatService.saveMessage(message);
             return ResponseEntity.ok(new BaseResponse(response, "", HttpStatus.OK));
         } catch (Exception e) {

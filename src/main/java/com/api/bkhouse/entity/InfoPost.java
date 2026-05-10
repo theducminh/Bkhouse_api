@@ -45,8 +45,6 @@ public class InfoPost {
     @Column(name = "create_at")
     private Instant createAt;
 
-    @Column(name = "embedding", columnDefinition = "vector(1536)")
-    private PGvector embedding;
 
     @Column(name = "update_by")
     private UUID updateBy;
@@ -108,14 +106,6 @@ public class InfoPost {
 
     public void setView(Integer view) {
         this.view = view;
-    }
-
-    public PGvector getEmbedding() {
-        return embedding;
-    }
-
-    public void setEmbedding(PGvector embedding) {
-        this.embedding = embedding;
     }
 
     public UUID getCreateBy() {

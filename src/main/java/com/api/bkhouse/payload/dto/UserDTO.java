@@ -20,7 +20,7 @@ public class UserDTO {
     private String username;
     @Schema(example = "minhchoi2004@gmail.com")
     private String email;
-    @Schema(example = "Password123!")
+    @Schema(example = "123456")
     private String password;
     @Size(max = 12, min = 12)
     private String identification;

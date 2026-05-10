@@ -16,6 +16,7 @@ import com.api.bkhouse.util.Util;
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RequestMapping("/api/no-auth/send-email")
 public class EmailController {
+    
     @Autowired
     private EmailService service;
 
@@ -23,33 +24,38 @@ public class EmailController {
     public ResponseEntity<BaseResponse> sendEmail(@RequestBody EmailVerify email) {
         try {
             if (email.getType().equalsIgnoreCase(EmailVerifyType.FORGOT_PASSWORD)) {
+                // ... (GIỮ NGUYÊN LOGIC FORGOT_PASSWORD CŨ CỦA BẠN) ...
                 User user = service.findByEmail(email.getEmail());
                 if (user == null) {
-                    return ResponseEntity.ok(new BaseResponse(null,
-                            "Email chưa được đăng ký trên hệ thống",
-                            HttpStatus.NO_CONTENT));
+                    return ResponseEntity.ok(new BaseResponse(null, "Email chưa được đăng ký trên hệ thống", HttpStatus.NO_CONTENT));
                 } else {
                     if (user.getUsername().equals(user.getEmail() + "_user_bkland")) {
-                        return ResponseEntity.ok(
-                                new BaseResponse(null,
-                                        "Email được sử dụng để đăng nhập thông qua google nên không thể đổi mật khẩu",
-                                        HttpStatus.NOT_ACCEPTABLE)
-                        );
+                        return ResponseEntity.ok(new BaseResponse(null, "Email được sử dụng để đăng nhập thông qua google nên không thể đổi mật khẩu", HttpStatus.NOT_ACCEPTABLE));
                     } else {
                         String code = Util.getRandomNumberString();
-                        service.sendEmail(email.getEmail(), email.getTitle(),
-                                "Mã xác thực của bạn là: " + code);
-                        return ResponseEntity.ok(new BaseResponse(code, "Đã gửi mã xác thực thành công.",
-                                HttpStatus.OK));
+                        service.sendEmail(email.getEmail(), email.getTitle(), "Mã xác thực của bạn là: " + code);
+                        return ResponseEntity.ok(new BaseResponse(code, "Đã gửi mã xác thực thành công.", HttpStatus.OK));
                     }
                 }
-            } else {
-                return ResponseEntity.ok(new BaseResponse(null, "", HttpStatus.OK));
+            } 
+            // ----- PHẦN THÊM MỚI CHO ĐĂNG KÝ TÀI KHOẢN -----
+            else if (email.getType().equalsIgnoreCase("REGISTER")) { 
+                User user = service.findByEmail(email.getEmail());
+                if (user != null) {
+                    return ResponseEntity.ok(new BaseResponse(null, "Email này đã được sử dụng trên hệ thống", HttpStatus.BAD_REQUEST));
+                } else {
+                    // Nếu email chưa tồn tại, tạo mã OTP và gửi
+                    String code = Util.getRandomNumberString();
+                    service.sendEmail(email.getEmail(), email.getTitle(), "Mã xác thực đăng ký tài khoản BKHouse của bạn là: " + code);
+                    return ResponseEntity.ok(new BaseResponse(code, "Đã gửi mã xác thực thành công.", HttpStatus.OK));
+                }
+            } 
+            // ------------------------------------------------
+            else {
+                return ResponseEntity.ok(new BaseResponse(null, "Loại yêu cầu gửi email không hợp lệ", HttpStatus.BAD_REQUEST));
             }
         } catch (Exception e) {
-            return ResponseEntity.ok(new BaseResponse(null,
-                    "Đã xảy ra lỗi khi gửi email " + e.getMessage(),
-                    HttpStatus.INTERNAL_SERVER_ERROR));
+            return ResponseEntity.ok(new BaseResponse(null, "Đã xảy ra lỗi khi gửi email " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR));
         }
     }
 }

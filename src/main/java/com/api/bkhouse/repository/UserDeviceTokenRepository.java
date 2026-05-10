@@ -65,7 +65,7 @@ public interface UserDeviceTokenRepository extends JpaRepository<UserDeviceToken
 
     // Thong bao cho tai khoan dac biet khi den han dong tien
     @Query(value = "select udt.notify_token\n" +
-            "from special_account sa inner join user_device_token udt\n" +
+            "from special_accounts sa inner join user_device_token udt\n" +
             "on udt.user_id = sa.user_id\n" +
             "where udt.notify_token is not null \n" +
             "and length(udt.notify_token) > 0\n" +
@@ -77,7 +77,7 @@ public interface UserDeviceTokenRepository extends JpaRepository<UserDeviceToken
 
     // Thong bao cho tai khoan doanh nghiep khi tao tai khoan nhung chua dong phi
     @Query(value = "select udt.notify_token\n" +
-            "from special_account sa inner join user_device_token udt\n" +
+            "from special_accounts sa inner join user_device_token udt\n" +
             "on udt.user_id = sa.user_id inner join user u\n" +
             "on sa.user_id = u.id \n" +
             "where udt.notify_token is not null \n" +

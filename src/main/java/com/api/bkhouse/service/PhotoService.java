@@ -32,9 +32,9 @@ public class PhotoService {
     @Transactional
     public String addPhoto(String title, MultipartFile file) throws IOException { 
         Photo photo = new Photo(title);
-        photo.setImage(
-          new Binary(BsonBinarySubType.BINARY, file.getBytes())); 
-        photo = photoRepository.insert(photo); return photo.getId().toString();
+        photo.setImage(new Binary(BsonBinarySubType.BINARY, file.getBytes())); 
+        photo = photoRepository.insert(photo); 
+        return photo.getId().toString();
     }
 
     public Photo getPhoto(String id) { 

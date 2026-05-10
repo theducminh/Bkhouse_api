@@ -5,13 +5,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import com.api.bkhouse.entity.InfoType;
 import com.api.bkhouse.payload.dto.InfoTypeDTO;
 import com.api.bkhouse.payload.response.BaseResponse;
 import com.api.bkhouse.service.InfoTypeService;
+import com.api.bkhouse.repository.UserRepository;
 import com.api.bkhouse.util.Util;
+import org.springframework.security.core.Authentication;
+import com.api.bkhouse.entity.User;
 
 import java.time.Instant;
 import java.util.stream.Collectors;
@@ -25,6 +29,9 @@ public class InfoTypeController {
 
     @Autowired
     private ModelMapper modelMapper;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @GetMapping("/skip")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
@@ -86,7 +93,18 @@ public class InfoTypeController {
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<BaseResponse> insert(@RequestBody InfoTypeDTO infoTypeDTO) {
         try {
-            infoTypeDTO.setCreateBy("admin");
+            //lấy id của admin trong bảng users để set vào trường createBy
+            // 1. Lấy Username của người đang đăng nhập từ SecurityContext
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String currentUsername = authentication.getName();
+
+            // 2. Tìm User trong Database dựa vào Username
+            // (Nếu hàm findByUsername của bạn trả về Optional, hãy dùng .get() hoặc .orElseThrow())
+            User adminUser = userRepository.findByUsername(currentUsername)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản Admin"));
+
+            // 3. Set UUID vào trường createBy
+            infoTypeDTO.setCreateBy(adminUser.getId());
             infoTypeDTO.setCreateAt(Util.getCurrentDateTime());
             InfoType infoType = service.createInfoType(convertToEntity(infoTypeDTO));
             return ResponseEntity.ok(new BaseResponse(convertToDTO(infoType),
@@ -105,7 +123,13 @@ public class InfoTypeController {
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<BaseResponse> update(@RequestBody InfoTypeDTO infoTypeDTO) {
         try {
-            infoTypeDTO.setUpdateBy("admin");
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String currentUsername = authentication.getName();
+
+            User adminUser = userRepository.findByUsername(currentUsername)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản Admin"));
+
+            infoTypeDTO.setUpdateBy(adminUser.getId());
             infoTypeDTO.setUpdateAt(Util.getCurrentDateTime());
             InfoType infoType = service.updateInfoType(convertToEntity(infoTypeDTO));
             return ResponseEntity.ok(new BaseResponse(convertToDTO(infoType),

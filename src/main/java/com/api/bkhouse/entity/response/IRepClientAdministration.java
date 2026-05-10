@@ -5,11 +5,17 @@ import java.time.Instant;
 public interface IRepClientAdministration {
     String getId();
     String getTitle();
-    Byte getSell();
+    
+    // Đã sửa: Byte -> Boolean
+    Boolean getSell(); 
+    
     String getType();
     Double getPrice();
     String getDescription();
-    Byte getEnable();
+    
+    // Đã sửa: Byte -> Boolean
+    Boolean getEnable(); 
+    
     String getStatus();
     Instant getCreateAt();
     Double getArea();

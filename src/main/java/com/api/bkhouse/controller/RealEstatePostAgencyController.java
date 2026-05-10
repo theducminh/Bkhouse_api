@@ -121,7 +121,7 @@ public class RealEstatePostAgencyController {
                 realEstatePostAgency.setCreateBy(userDetails.getId());
                 realEstatePostAgency.setCreateAt(Util.getCurrentDateTime());
                 realEstatePostAgency.setStatus(ERepAgencyStatus.DA_GUI_YEU_CAU);
-                realEstatePostAgency.setId(0L);
+                realEstatePostAgency.setId(null);
                 realEstatePostAgency.setAgencyId(e);
                 realEstatePostAgency.setRealEstatePostId(body.getRealEstatePostId());
                 realEstatePostAgencies.add(realEstatePostAgency);

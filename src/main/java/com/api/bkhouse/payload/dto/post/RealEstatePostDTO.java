@@ -1,14 +1,13 @@
 package com.api.bkhouse.payload.dto.post;
 
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
-
+import org.locationtech.jts.geom.Point; 
 import com.api.bkhouse.constant.enumeric.EDirection;
 import com.api.bkhouse.constant.enumeric.EStatus;
 import com.api.bkhouse.constant.enumeric.EType;
-import com.api.bkhouse.entity.User;
 import com.api.bkhouse.payload.dto.*;
+
 
 import java.time.Instant;
 import java.util.List;
@@ -16,90 +15,75 @@ import java.util.UUID;
 
 public class RealEstatePostDTO {
 
-    @NotNull
     private UUID id;
 
-    @Enumerated(EnumType.STRING)
-    @NotNull
+    @NotNull(message = "Loại hình không được để trống")
     private EType type;
 
-    @NotNull
-    private UserDTO ownerId;
+    @NotNull(message = "Người đăng không được để trống")
+    private UserDTO owner;
 
-    @NotNull
+    @NotBlank(message = "Tiêu đề không được để trống")
     private String title;
 
-    @NotNull
+    @NotBlank(message = "Mô tả không được để trống")
     private String description;
 
-    @NotNull
+    @NotBlank(message = "Địa chỉ hiển thị không được để trống")
     private String addressShow;
 
-    @NotNull
+    @NotNull(message = "Diện tích không được để trống")
     private Double area;
 
-    @NotNull
+    @NotNull(message = "Giá không được để trống")
     private Double price;
 
-    @NotNull
+    @NotNull(message = "Tỉnh/Thành phố không được để trống")
     private ProvinceDTO province;
 
-    @NotNull
+    @NotNull(message = "Quận/Huyện không được để trống")
     private DistrictDTO district;
 
-    @NotNull
+    @NotNull(message = "Phường/Xã không được để trống")
     private WardDTO ward;
 
-    @Enumerated(EnumType.STRING)
-    @NotNull
+    @NotNull(message = "Trạng thái không được để trống")
     private EStatus status;
 
-    @NotNull
-    private Double lat;
+    // LƯU Ý KỸ THUẬT: 
+    // DTO có thể nhận String (ví dụ dạng "POINT(105.8 21.0)") từ Frontend
+    // Sau đó Backend (Service/Mapper) sẽ convert String này thành org.locationtech.jts.geom.Point
+    private Point location; 
 
-    @NotNull
-    private Double lng;
+    @NotNull(message = "Trạng thái hiển thị không được để trống")
+    private Boolean isEnabled;
 
-    @NotNull
-    private boolean enable;
+    @NotNull(message = "Trạng thái bán/cho thuê không được để trống")
+    private Boolean isSell;
 
-    @NotNull
     private Integer priority;
 
-    @NotNull
-    private Integer period;
-
-    @Enumerated(EnumType.STRING)
-    @NotNull
     private EDirection direction;
 
-    @NotNull
-    private boolean sell;
-
-    @NotNull
     private String street;
 
-    private Integer view;
+    private Integer viewCount;
 
-    private Integer clickedView;
+    private Integer contactCount;
 
-    private UUID createBy;
+    private String metadata; 
 
-    private Instant createAt;
+    private UUID createdBy;
 
-    private UUID updateBy;
+    private Instant createdAt;
 
-    private Instant updateAt;
+    private Instant updatedAt;
 
     private List<RealEstatePostPriceDTO> realEstatePostPrices;
 
-    public List<RealEstatePostPriceDTO> getRealEstatePostPrices() {
-        return realEstatePostPrices;
-    }
-
-    public void setRealEstatePostPrices(List<RealEstatePostPriceDTO> realEstatePostPrices) {
-        this.realEstatePostPrices = realEstatePostPrices;
-    }
+    // ==========================================
+    // GETTERS & SETTERS
+    // ==========================================
 
     public UUID getId() {
         return id;
@@ -118,11 +102,11 @@ public class RealEstatePostDTO {
     }
 
     public UserDTO getOwnerId() {
-        return ownerId;
+        return owner;
     }
 
-    public void setOwnerId(UserDTO ownerId) {
-        this.ownerId = ownerId;
+    public void setOwnerId(UserDTO owner) {
+        this.owner = owner;
     }
 
     public String getTitle() {
@@ -197,28 +181,28 @@ public class RealEstatePostDTO {
         this.status = status;
     }
 
-    public Double getLat() {
-        return lat;
+    public Point getLocation() {
+        return location;
     }
 
-    public void setLat(Double lat) {
-        this.lat = lat;
+    public void setLocation(Point location) {
+        this.location = location;
     }
 
-    public Double getLng() {
-        return lng;
+    public Boolean getIsEnabled() {
+        return isEnabled;
     }
 
-    public void setLng(Double lng) {
-        this.lng = lng;
+    public void setIsEnabled(Boolean isEnabled) {
+        this.isEnabled = isEnabled;
     }
 
-    public boolean isEnable() {
-        return enable;
+    public Boolean getIsSell() {
+        return isSell;
     }
 
-    public void setEnable(boolean enable) {
-        this.enable = enable;
+    public void setIsSell(Boolean isSell) {
+        this.isSell = isSell;
     }
 
     public Integer getPriority() {
@@ -229,60 +213,12 @@ public class RealEstatePostDTO {
         this.priority = priority;
     }
 
-    public Integer getPeriod() {
-        return period;
-    }
-
-    public void setPeriod(Integer period) {
-        this.period = period;
-    }
-
     public EDirection getDirection() {
         return direction;
     }
 
     public void setDirection(EDirection direction) {
         this.direction = direction;
-    }
-
-    public boolean isSell() {
-        return sell;
-    }
-
-    public void setSell(boolean sell) {
-        this.sell = sell;
-    }
-
-    public UUID getCreateBy() {
-        return createBy;
-    }
-
-    public void setCreateBy(UUID createBy) {
-        this.createBy = createBy;
-    }
-
-    public Instant getCreateAt() {
-        return createAt;
-    }
-
-    public void setCreateAt(Instant createAt) {
-        this.createAt = createAt;
-    }
-
-    public UUID getUpdateBy() {
-        return updateBy;
-    }
-
-    public void setUpdateBy(UUID updateBy) {
-        this.updateBy = updateBy;
-    }
-
-    public Instant getUpdateAt() {
-        return updateAt;
-    }
-
-    public void setUpdateAt(Instant updateAt) {
-        this.updateAt = updateAt;
     }
 
     public String getStreet() {
@@ -293,19 +229,59 @@ public class RealEstatePostDTO {
         this.street = street;
     }
 
-    public Integer getView() {
-        return view;
+    public Integer getViewCount() {
+        return viewCount;
     }
 
-    public void setView(Integer view) {
-        this.view = view;
+    public void setViewCount(Integer viewCount) {
+        this.viewCount = viewCount;
     }
 
-    public Integer getClickedView() {
-        return clickedView;
+    public Integer getContactCount() {
+        return contactCount;
     }
 
-    public void setClickedView(Integer clickedView) {
-        this.clickedView = clickedView;
+    public void setContactCount(Integer contactCount) {
+        this.contactCount = contactCount;
+    }
+
+    public String getMetadata() {
+        return metadata;
+    }
+
+    public void setMetadata(String metadata) {
+        this.metadata = metadata;
+    }
+
+    public UUID getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(UUID createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public List<RealEstatePostPriceDTO> getRealEstatePostPrices() {
+        return realEstatePostPrices;
+    }
+
+    public void setRealEstatePostPrices(List<RealEstatePostPriceDTO> realEstatePostPrices) {
+        this.realEstatePostPrices = realEstatePostPrices;
     }
 }

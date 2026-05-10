@@ -1,6 +1,7 @@
 package com.api.bkhouse.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.api.bkhouse.entity.RealEstatePost;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;

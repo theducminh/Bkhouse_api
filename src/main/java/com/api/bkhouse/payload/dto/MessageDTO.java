@@ -10,17 +10,14 @@ import java.util.UUID;
 
 public class MessageDTO {
     @NotNull
-    @NotBlank
     private Long id;
     @NotNull
     @NotBlank
     private String message;
     @NotNull
-    @NotBlank
     private Integer chatRoomId;
-    private UUID createBy;
+    private String createBy;
     private Instant createAt;
-    private UUID updateBy;
     private Instant updateAt;
 
     public Long getId() {
@@ -47,11 +44,11 @@ public class MessageDTO {
         this.chatRoomId = chatRoomId;
     }
 
-    public UUID getCreateBy() {
+    public String getCreateBy() {
         return createBy;
     }
 
-    public void setCreateBy(UUID createBy) {
+    public void setCreateBy(String createBy) {
         this.createBy = createBy;
     }
 
@@ -61,14 +58,6 @@ public class MessageDTO {
 
     public void setCreateAt(Instant createAt) {
         this.createAt = createAt;
-    }
-
-    public UUID getUpdateBy() {
-        return updateBy;
-    }
-
-    public void setUpdateBy(UUID updateBy) {
-        this.updateBy = updateBy;
     }
 
     public Instant getUpdateAt() {

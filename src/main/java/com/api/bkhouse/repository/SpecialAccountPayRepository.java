@@ -5,7 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.api.bkhouse.entity.SpecialAccountPay;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface SpecialAccountPayRepository extends JpaRepository<SpecialAccountPay, Long> {
-    List<SpecialAccountPay> findByUserIdOrderByCreateAtDesc(String userId);
+    List<SpecialAccountPay> findByUserIdOrderByCreateAtDesc(UUID userId);
 }

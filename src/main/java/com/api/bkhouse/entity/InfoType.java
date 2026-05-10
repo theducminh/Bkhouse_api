@@ -4,6 +4,7 @@ import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(name = "info_type")
@@ -17,8 +18,7 @@ public class InfoType {
     @Column(name = "name")
     private String name;
 
-    @NotNull
-    @NotBlank
+    
     @Column(name = "parent")
     private Integer parent;
 
@@ -26,16 +26,17 @@ public class InfoType {
     private String path;
 
     @Column(name = "create_by")
-    private String createBy;
+    private UUID createBy;
 
     @Column(name = "create_at")
     private Instant createAt;
 
     @Column(name = "update_by")
-    private String updateBy;
+    private UUID updateBy;
 
     @Column(name = "update_at")
     private Instant updateAt;
+    
 
     public Integer getId() {
         return id;
@@ -69,11 +70,11 @@ public class InfoType {
         this.path = path;
     }
 
-    public String getCreateBy() {
+    public UUID getCreateBy() {
         return createBy;
     }
 
-    public void setCreateBy(String createBy) {
+    public void setCreateBy(UUID createBy) {
         this.createBy = createBy;
     }
 
@@ -85,11 +86,11 @@ public class InfoType {
         this.createAt = createAt;
     }
 
-    public String getUpdateBy() {
+    public UUID getUpdateBy() {
         return updateBy;
     }
 
-    public void setUpdateBy(String updateBy) {
+    public void setUpdateBy(UUID updateBy) {
         this.updateBy = updateBy;
     }
 

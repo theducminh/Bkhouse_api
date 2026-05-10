@@ -51,7 +51,7 @@ public class ProjectService {
     public Project findById(UUID id, boolean increaseView) {
         if (increaseView) {
             ProjectView projectView = new ProjectView();
-            projectView.setId(0L);
+            projectView.setId(null);
             projectView.setProjectId(id);
             projectView.setCreateAt(Util.getCurrentDateTime());
             projectViewRepository.save(projectView);
@@ -110,15 +110,15 @@ public class ProjectService {
         return projectOptional.orElse(null);
     }
 
-    public boolean isInterested(UUID userId, UUID realEstatePostId, String deviceId) {
-        if (deviceId != null && deviceId.length() > 0 && (userId == null || userId.toString().length() == 0)) {
-            return projectInterestedRepository.existsByDeviceIdAndProjectId(deviceId, realEstatePostId);
+    public boolean isInterested(UUID userId, UUID realEstatePostId, String deviceInfo) {
+        if (deviceInfo != null && deviceInfo.length() > 0 && (userId == null || userId.toString().length() == 0)) {
+            return projectInterestedRepository.existsByDeviceInfoAndProjectId(deviceInfo, realEstatePostId);
         }
         return projectInterestedRepository.existsByUserIdAndProjectId(userId, realEstatePostId);
     }
 
-    public Optional<ProjectInterested> findByDeviceIdAndProjectId(String deviceId, UUID projectId) {
-        return projectInterestedRepository.findByDeviceIdAndProjectId(deviceId, projectId);
+    public Optional<ProjectInterested> findByDeviceInfoAndProjectId(String deviceInfo, UUID projectId) {
+        return projectInterestedRepository.findByDeviceInfoAndProjectId(deviceInfo, projectId);
     }
 
     public Optional<ProjectInterested> findByUserIdAndRealEstatePostId(UUID userId, UUID projectId) {

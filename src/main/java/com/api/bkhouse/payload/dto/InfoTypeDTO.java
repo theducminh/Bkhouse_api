@@ -1,15 +1,16 @@
 package com.api.bkhouse.payload.dto;
 
 import java.time.Instant;
+import java.util.UUID;
 
 public class InfoTypeDTO {
     private Integer id;
     private String name;
     private Integer parent;
     private String path;
-    private String createBy;
+    private UUID createBy;
     private Instant createAt;
-    private String updateBy;
+    private UUID updateBy;
     private Instant updateAt;
 
     public Integer getId() {
@@ -44,11 +45,11 @@ public class InfoTypeDTO {
         this.path = path;
     }
 
-    public String getCreateBy() {
+    public UUID getCreateBy() {
         return createBy;
     }
 
-    public void setCreateBy(String createBy) {
+    public void setCreateBy(UUID createBy) {
         this.createBy = createBy;
     }
 
@@ -60,11 +61,11 @@ public class InfoTypeDTO {
         this.createAt = createAt;
     }
 
-    public String getUpdateBy() {
+    public UUID getUpdateBy() {
         return updateBy;
     }
 
-    public void setUpdateBy(String updateBy) {
+    public void setUpdateBy(UUID updateBy) {
         this.updateBy = updateBy;
     }
 
