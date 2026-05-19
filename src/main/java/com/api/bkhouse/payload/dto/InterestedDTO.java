@@ -10,7 +10,6 @@ public class InterestedDTO {
     private UUID userId;
     private String deviceInfo;
     @NotNull
-    @NotBlank
     private UUID realEstatePostId;
     private UUID createBy;
     private Instant createAt;

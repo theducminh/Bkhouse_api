@@ -5,12 +5,14 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
 import com.api.bkhouse.constant.enumeric.EDirection;
+import java.time.Instant;
 
 @Entity
 @Table(name = "apartment")
 public class Apartment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
 
     @OneToOne
@@ -19,34 +21,32 @@ public class Apartment {
 
     @Column(name = "floor_no")
     @NotNull
-    @NotBlank
     private Integer floorNo;
 
     @Column(name = "no_bedroom")
     @NotNull
-    @NotBlank
     private Integer noBedroom;
 
     @Column(name = "no_bathroom")
     @NotNull
-    @NotBlank
     private Integer noBathroom;
 
     @Column(name = "furniture")
     @NotNull
-    @NotBlank
     private String furniture;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "balcony_direction")
     @NotNull
-    @NotBlank
     private EDirection balconyDirection;
 
     @Column(name = "construction")
     @NotNull
     @NotBlank
     private String construction;
+
+    @Column (name = "updated_at")
+    private Instant updatedAt;
 
     public Long getId() {
         return id;
@@ -110,5 +110,13 @@ public class Apartment {
 
     public void setConstruction(String construction) {
         this.construction = construction;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

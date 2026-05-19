@@ -27,17 +27,14 @@ public class SystemChat {
 
     @Column(name = "is_send_by_admin")
     @NotNull
-    @NotBlank
     private boolean isSendByAdmin;
 
     @Column(name = "send_at")
     @NotNull
-    @NotBlank
     private Instant sendAt;
 
     @Column(name = "enable")
     @NotNull
-    @NotBlank
     private boolean enable;
 
     @Column(name = "update_by")

@@ -21,6 +21,7 @@ public class RepDetailPageResponse {
     private String addressShow;
     private String imageUrl;
     private EDirection direction;
+    private boolean enable;
 
     public String getId() {
         return id;
@@ -124,5 +125,13 @@ public class RepDetailPageResponse {
 
     public void setDirection(EDirection direction) {
         this.direction = direction;
+    }
+
+    public boolean isEnable() {
+        return enable;
+    }
+
+    public void setEnable(boolean enable) {
+        this.enable = enable;
     }
 }

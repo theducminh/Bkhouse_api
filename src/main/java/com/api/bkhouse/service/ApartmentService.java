@@ -10,11 +10,15 @@ import java.util.UUID;
 
 @Service
 public class ApartmentService {
-    @Autowired
-    private ApartmentRepository repository;
+    
+    private final ApartmentRepository repository;
+
+    public ApartmentService(ApartmentRepository repository) {
+        this.repository = repository;
+    }
 
     public Apartment findByRealEstatePostId(UUID id) {
-        return repository.findByRealEstatePostId(id).get();
+        return repository.findByRealEstatePostId(id).orElse(null);
     }
 
     @Transactional
@@ -27,6 +31,8 @@ public class ApartmentService {
         return repository.save(apartment);
     }
 
+
+    @Transactional
     public void deleteByRealEstatePostId(UUID realEstatePostId) {
         repository.deleteByRealEstatePostId(realEstatePostId);
     }

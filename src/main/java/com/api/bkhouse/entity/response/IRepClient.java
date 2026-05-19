@@ -1,7 +1,7 @@
 package com.api.bkhouse.entity.response;
 
 import java.time.Instant;
-
+import java.util.UUID;
 public interface IRepClient {
     String getId();
     String getTitle();

@@ -11,16 +11,12 @@ import java.time.Instant;
 import java.util.UUID;
 
 public class RealEstatePostAgencyDTO {
-    @NotBlank
-    @NotNull
+    
     private Long id;
-    @NotBlank
     @NotNull
     private UUID realEstatePostId;
-    @NotBlank
     @NotNull
     private UUID agencyId;
-    @NotBlank
     @NotNull
     @Enumerated(EnumType.STRING)
     private ERepAgencyStatus status;

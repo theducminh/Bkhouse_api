@@ -12,7 +12,7 @@ import org.springframework.data.annotation.Id; //
 
 /**
  *
- * @author dieppv
+ * @author ducnm
  */
 @Document(collection = "photos")
 public class Photo {

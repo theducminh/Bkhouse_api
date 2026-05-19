@@ -17,18 +17,15 @@ public class RealEstatePostAgency {
     private Long id;
 
     @Column(name = "real_estate_post_id")
-    @NotBlank
     @NotNull
     private UUID realEstatePostId;
 
     @Column(name = "agency_id")
     @NotNull
-    @NotBlank
     private UUID agencyId;
 
     @Column(name = "status")
     @NotNull
-    @NotBlank
     @Enumerated(EnumType.STRING)
     private ERepAgencyStatus status;
 

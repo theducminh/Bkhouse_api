@@ -1,7 +1,8 @@
 package com.api.bkhouse.controller;
 
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,17 +28,26 @@ import java.util.UUID;
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RequestMapping("/api/v1/payment")
 public class PaymentController {
-    @Autowired
-    private PostPayService postPayService;
+    
+    private final PostPayService postPayService;
 
-    @Autowired
-    private SpecialAccountPayService specialAccountPayService;
+   
+    private final SpecialAccountPayService specialAccountPayService;
 
-    @Autowired
-    private PaymentService paymentService;
+    
+    private final PaymentService paymentService;
 
-    @Autowired
-    private ModelMapper modelMapper;
+    
+    private final ModelMapper modelMapper;
+    private static final Logger logger = LoggerFactory.getLogger(PaymentController.class);
+
+    public PaymentController(PostPayService postPayService, SpecialAccountPayService specialAccountPayService,
+                             PaymentService paymentService, ModelMapper modelMapper) {
+        this.postPayService = postPayService;
+        this.specialAccountPayService = specialAccountPayService;
+        this.paymentService = paymentService;
+        this.modelMapper = modelMapper;
+    }
 
     @GetMapping("/{userId}")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_ADMIN') or hasRole('ROLE_ENTERPRISE') or hasRole('ROLE_AGENCY')")
@@ -70,6 +80,7 @@ public class PaymentController {
                             .collect(Collectors.toList()),
                     "", HttpStatus.OK));
         } catch (Exception e) {
+            logger.error("Error while fetching payment history for user {}: {}", userId, e.getMessage());
             return ResponseEntity.ok(new BaseResponse(null,
                     "Đã xảy ra lỗi khi lấy danh sách lịch sử thanh toán của người dùng. "
                     + e.getMessage(),
@@ -90,6 +101,7 @@ public class PaymentController {
                             "", HttpStatus.OK)
             );
         } catch (Exception e) {
+            logger.error("Lỗi khi lấy tất cả PostPay: ", e);
             return ResponseEntity.ok(new BaseResponse(null,
                     "Đã xảy ra lỗi khi lấy danh sách lịch sử thanh toán của người dùng. "
                             + e.getMessage(),
@@ -110,6 +122,7 @@ public class PaymentController {
                             "", HttpStatus.OK)
             );
         } catch (Exception e) {
+            logger.error("Lỗi khi lấy tất cả SpecialAccountPay: ", e);
             return ResponseEntity.ok(new BaseResponse(null,
                     "Đã xảy ra lỗi khi lấy danh sách lịch sử thanh toán của người dùng. "
                             + e.getMessage(),
@@ -123,9 +136,10 @@ public class PaymentController {
         try {
             return ResponseEntity.ok(new BaseResponse(paymentService.getPaymentStatistic(nam), "", HttpStatus.OK));
         } catch (Exception e) {
+            logger.error("Lỗi khi thống kê thanh toán năm: ", e);
+            // 🚨 Đã gỡ lỗi nối đúp e.getMessage()
             return ResponseEntity.ok(new BaseResponse(null,
-                    "Đã xảy ra lỗi khi lấy thông tin thanh toán năm. " + e.getMessage()
-                            + e.getMessage(),
+                    "Đã xảy ra lỗi khi lấy thông tin thanh toán năm. " + e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR));
         }
     }
@@ -136,9 +150,9 @@ public class PaymentController {
         try {
             return ResponseEntity.ok(new BaseResponse(paymentService.getPaymentStatisticMonth(nam, thang), "", HttpStatus.OK));
         } catch (Exception e) {
+            logger.error("Lỗi khi thống kê thanh toán tháng: ", e);
             return ResponseEntity.ok(new BaseResponse(null,
-                    "Đã xảy ra lỗi khi lấy thông tin thanh toán theo tháng. " + e.getMessage()
-                            + e.getMessage(),
+                    "Đã xảy ra lỗi khi lấy thông tin thanh toán theo tháng. " + e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR));
         }
     }
@@ -149,9 +163,9 @@ public class PaymentController {
         try {
             return ResponseEntity.ok(new BaseResponse(paymentService.getChargeInYear(nam), "", HttpStatus.OK));
         } catch (Exception e) {
+            logger.error("Lỗi khi thống kê nạp tiền năm: ", e);
             return ResponseEntity.ok(new BaseResponse(null,
-                    "Đã xảy ra lỗi khi lấy thông tin nạp tiền trong năm. " + e.getMessage()
-                            + e.getMessage(),
+                    "Đã xảy ra lỗi khi lấy thông tin nạp tiền trong năm. " + e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR));
         }
     }
@@ -162,9 +176,9 @@ public class PaymentController {
         try {
             return ResponseEntity.ok(new BaseResponse(paymentService.getChargeByMonth(nam, thang), "", HttpStatus.OK));
         } catch (Exception e) {
+            logger.error("Lỗi khi thống kê nạp tiền tháng: ", e);
             return ResponseEntity.ok(new BaseResponse(null,
-                    "Đã xảy ra lỗi khi lấy thông tin nạp tiền trong năm. " + e.getMessage()
-                            + e.getMessage(),
+                    "Đã xảy ra lỗi khi lấy thông tin nạp tiền theo tháng. " + e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR));
         }
     }

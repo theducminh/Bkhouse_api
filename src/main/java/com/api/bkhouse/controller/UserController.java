@@ -9,9 +9,10 @@ import com.api.bkhouse.security.services.UserDetailsImpl;
 import com.api.bkhouse.service.DistrictService;
 import com.api.bkhouse.service.ProvinceService;
 import com.api.bkhouse.service.UserService;
-import com.api.bkhouse.service.WardService;
 
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,21 +26,22 @@ import java.util.UUID;
 @RestController
 @CrossOrigin(origins = "*", maxAge = 3600)
 public class UserController {
-    @Autowired
     private UserService service;
 
-    @Autowired
     private ModelMapper modelMapper;
 
-    @Autowired
     private ProvinceService provinceService;
 
-    @Autowired
     private DistrictService districtService;
 
-    @Autowired
-    private WardService wardService;
 
+    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
+    public UserController(UserService service, ModelMapper modelMapper, ProvinceService provinceService, DistrictService districtService) {
+        this.service = service;
+        this.modelMapper = modelMapper;
+        this.provinceService = provinceService;
+        this.districtService = districtService;
+    }
     @GetMapping("/api/v1/user/{userId}")
     @PreAuthorize("hasRole('ROLE_AGENCY') or hasRole('ROLE_ADMIN') or hasRole('ROLE_USER') or hasRole('ROLE_ENTERPRISE')")
     public ResponseEntity<BaseResponse> getUserById(@PathVariable("userId") UUID userId) {
@@ -54,6 +56,7 @@ public class UserController {
                         "", HttpStatus.OK));
             }
         } catch (Exception e) {
+            logger.error("Lỗi lấy user theo ID: ", e);
             return ResponseEntity.ok(new BaseResponse(null,
                     "Đã xảy ra lỗi khi lấy thông tin người dùng " + e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR));
@@ -82,11 +85,7 @@ public class UserController {
                     if (province != null) provinceDTO = modelMapper.map(province, ProvinceDTO.class);
                 }
 
-                WardDTO wardDTO = null;
-                if (user.getWardCode() != null) {
-                    var ward = wardService.findByCode(user.getWardCode());
-                    if (ward != null) wardDTO = modelMapper.map(ward, WardDTO.class);
-                }
+               
 
                 UserInfoResponse userInfoResponse = new UserInfoResponse();
                 userInfoResponse.setAddress(user.getAddress());
@@ -96,7 +95,6 @@ public class UserController {
                 userInfoResponse.setCreatedAt(user.getCreatedAt());
                 userInfoResponse.setDistrict(districtDTO);
                 userInfoResponse.setProvince(provinceDTO);
-                userInfoResponse.setWard(wardDTO);
                 userInfoResponse.setEnable(user.isEnabled());
                 userInfoResponse.setGender(user.getGender());
                 userInfoResponse.setId(user.getId());
@@ -113,11 +111,12 @@ public class UserController {
                 userInfoResponse.setPassword(user.getPassword());
                 userInfoResponse.setPhoneNumber(user.getPhoneNumber());
                 userInfoResponse.setUsername(user.getUsername());
+
                 return ResponseEntity.ok(new BaseResponse(userInfoResponse,
                         "", HttpStatus.OK));
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Lỗi lấy User Info: ", e);
             return ResponseEntity.ok(new BaseResponse(null,
                     "Đã xảy ra lỗi khi lấy thông tin người dùng " + e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR));
@@ -131,6 +130,7 @@ public class UserController {
             service.updateUserInfo(modelMapper.map(userDTO, User.class));
             return ResponseEntity.ok(new BaseResponse(null, "Cập nhật thông tin người dùng thành công.", HttpStatus.OK));
         } catch (Exception e) {
+            logger.error("Lỗi cập nhật User Info: ", e);
             return ResponseEntity.ok(new BaseResponse(null,
                     "Đã xảy ra lỗi khi cập nhật thông tin người dùng " + e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR));
@@ -152,6 +152,7 @@ public class UserController {
                     "", HttpStatus.OK
             ));
         } catch (Exception e) {
+            logger.error("Lỗi lấy tất cả user: ", e);
             return ResponseEntity.ok(new BaseResponse(null,
                     "Đã xảy ra lỗi khi lấy danh sách người dùng " + e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR));
@@ -179,6 +180,7 @@ public class UserController {
                         "Mở khóa tài khoản thành công.", HttpStatus.OK));
             }
         } catch (Exception e) {
+            logger.error("Lỗi khi cập nhật trạng thái tài khoản: ", e);
             return ResponseEntity.ok(new BaseResponse(null,
                     "Đã xảy ra lỗi khi cập nhật trạng thái tài khoản. " + e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR));
@@ -198,6 +200,7 @@ public class UserController {
                         "", HttpStatus.OK));
             }
         } catch (Exception e) {
+            logger.error("Lỗi lấy user theo ID: ", e);
             return ResponseEntity.ok(new BaseResponse(null,
                     "Đã xảy ra lỗi khi lấy thông tin người dùng " + e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR));
@@ -210,6 +213,7 @@ public class UserController {
         try {
             return ResponseEntity.ok(new BaseResponse(service.listRoles(userDetails.getId()), "", HttpStatus.OK));
         } catch (Exception e) {
+            logger.error("Lỗi khi lấy thông tin quyền của người dùng: ", e);
             return ResponseEntity.ok(new BaseResponse(null,
                     "Đã xảy ra lỗi khi lấy thông tin quyền của người dùng " + e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR));

@@ -4,6 +4,7 @@ import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(name = "report_type")
@@ -17,22 +18,25 @@ public class ReportType {
     @NotNull
     private String name;
 
+    // ĐÃ SỬA: Xóa @NotBlank và @NotNull vì đây là kiểu boolean nguyên thủy
     @Column(name = "is_forum")
-    @NotNull
-    @NotBlank
     private boolean isForum;
 
+    // ĐÃ SỬA: Chuyển String thành UUID để đồng bộ với Database Postgres
     @Column(name = "create_by")
-    private String createBy;
+    private UUID createBy;
 
     @Column(name = "create_at")
     private Instant createAt;
 
+    // ĐÃ SỬA: Chuyển String thành UUID
     @Column(name = "update_by")
-    private String updateBy;
+    private UUID updateBy;
 
     @Column(name = "update_at")
     private Instant updateAt;
+
+    // ================= GETTERS & SETTERS =================
 
     public Integer getId() {
         return id;
@@ -55,14 +59,14 @@ public class ReportType {
     }
 
     public void setForum(boolean forum) {
-        isForum = forum;
+        this.isForum = forum;
     }
 
-    public String getCreateBy() {
+    public UUID getCreateBy() {
         return createBy;
     }
 
-    public void setCreateBy(String createBy) {
+    public void setCreateBy(UUID createBy) {
         this.createBy = createBy;
     }
 
@@ -74,11 +78,11 @@ public class ReportType {
         this.createAt = createAt;
     }
 
-    public String getUpdateBy() {
+    public UUID getUpdateBy() {
         return updateBy;
     }
 
-    public void setUpdateBy(String updateBy) {
+    public void setUpdateBy(UUID updateBy) {
         this.updateBy = updateBy;
     }
 

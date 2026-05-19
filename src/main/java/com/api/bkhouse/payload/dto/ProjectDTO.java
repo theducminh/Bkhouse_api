@@ -18,41 +18,29 @@ import java.util.Map;
 @Data
 public class ProjectDTO {
     private UUID id;
-    @NotNull
     @NotBlank
     private String name;
     @NotNull
-    @NotBlank
     private ProvinceDTO province;
     @NotNull
-    @NotBlank
     private DistrictDTO district;
-    @NotNull
-    @NotBlank
-    private WardDTO ward;
-    @NotNull
+
     @NotBlank
     private String address; 
     private Double area;
     @NotNull
-    @NotBlank
     @Enumerated(EnumType.STRING)
     private EProjectType type;
-    @NotNull
     @NotBlank
     private String phoneNumber;
     
     @NotNull
     @NotBlank
     private String email;
-    @NotNull
     @NotBlank
     private String imageUrl;
-    @NotNull
-    @NotBlank
+   
     private boolean enable;
-    @NotBlank
-    @NotNull
     
     @NotBlank
     @NotNull
@@ -92,14 +80,6 @@ public class ProjectDTO {
 
     public void setDistrict(DistrictDTO district) {
         this.district = district;
-    }
-
-    public WardDTO getWard() {
-        return ward;
-    }
-
-    public void setWard(WardDTO ward) {
-        this.ward = ward;
     }
 
     public Double getArea() {

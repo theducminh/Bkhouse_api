@@ -16,7 +16,7 @@ public class ChatRoomDTO {
     
     @NotNull
     private UUID secondUserId;
-    @NotBlank
+    
     @NotNull
     private boolean enable;
    

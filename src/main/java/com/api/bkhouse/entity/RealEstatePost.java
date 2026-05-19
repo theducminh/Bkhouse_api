@@ -3,23 +3,34 @@ package com.api.bkhouse.entity;
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import org.hibernate.annotations.TypeDef;
+import org.hibernate.annotations.Type;
 
 import com.api.bkhouse.constant.enumeric.EDirection;
 import com.api.bkhouse.constant.enumeric.EStatus;
 import com.api.bkhouse.constant.enumeric.EType;
 
 // Import JTS cho kiểu PostGIS Geography (Cần thư viện hibernate-spatial)
+import lombok.*;
 import org.locationtech.jts.geom.Point; 
 
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.Map;
 
 @Entity
 @Table(name = "real_estate_posts")
+@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class RealEstatePost {
 
-    @Id
+    @Id // Lưu UUID dưới dạng chuỗi trong DB
     @Column(name = "id")
     private UUID id;
 
@@ -53,6 +64,9 @@ public class RealEstatePost {
     @NotNull
     private Double price;
 
+    @Column(name = "price_per_m2", insertable = false, updatable = false)
+    private Double pricePerM2;
+
     // Quan hệ Nhiều - Một 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "province_code")
@@ -64,10 +78,6 @@ public class RealEstatePost {
     @NotNull
     private District district;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ward_code")
-    @NotNull
-    private Ward ward;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
@@ -80,7 +90,7 @@ public class RealEstatePost {
 
     @Column(name = "is_enabled")
     @NotNull
-    private Boolean enabled;
+    private Boolean enable;
 
     @Column(name = "is_sell")
     @NotNull
@@ -97,14 +107,15 @@ public class RealEstatePost {
     private String street;
 
     @Column(name = "view_count")
-    private Integer viewCount;
+    private Integer viewCount = 0;
 
     @Column(name = "contact_count")
-    private Integer contactCount;
+    private Integer contactCount = 0;
 
     // Lưu trữ metadata linh hoạt dưới dạng JSON
+    @Type(type = "jsonb")
     @Column(name = "metadata", columnDefinition = "jsonb")
-    private String metadata; 
+    private Map<String, Object> metadata; 
 
     // Trường Embedding để hỗ trợ tìm kiếm vector (AI)
     @Column(name = "embedding", columnDefinition = "vector")
@@ -122,9 +133,28 @@ public class RealEstatePost {
     @OneToMany(mappedBy = "realEstatePost")
     private List<RealEstatePostPrice> realEstatePostPrices;
 
+    @Transient
+    private Integer period;
+
     // ==========================================
     // GETTERS VÀ SETTERS
     // ==========================================
+
+    // Tự động gán thời gian khi Thêm mới/Cập nhật bản ghi
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = Instant.now();
+        this.updatedAt = Instant.now();
+        if (this.status == null) this.status = EStatus.PENDING; // Mặc định là PENDING
+
+        if (this.enable == null) this.enable = true; // Mặc định bài viết mới tạo là true
+        if (this.isSell == null) this.isSell = true;   // Chống cháy nếu isSell cũng bị ModelMapper lỡ nhịp
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = Instant.now();
+    }
 
     public UUID getId() {
         return id;
@@ -206,13 +236,7 @@ public class RealEstatePost {
         this.district = district;
     }
 
-    public Ward getWard() {
-        return ward;
-    }
-
-    public void setWard(Ward ward) {
-        this.ward = ward;
-    }
+    
 
     public EStatus getStatus() {
         return status;
@@ -230,12 +254,12 @@ public class RealEstatePost {
         this.location = location;
     }
 
-    public Boolean getEnabled() {
-        return enabled;
+    public Boolean getEnable() {
+        return enable;
     }
 
-    public void setEnabled(Boolean enabled) {
-        this.enabled = enabled;
+    public void setEnable(Boolean enable) {
+        this.enable = enable;
     }
 
     public Boolean getSell() {
@@ -286,11 +310,11 @@ public class RealEstatePost {
         this.contactCount = contactCount;
     }
 
-    public String getMetadata() {
+    public Map<String, Object> getMetadata() {
         return metadata;
     }
 
-    public void setMetadata(String metadata) {
+    public void setMetadata(Map<String, Object> metadata) {
         this.metadata = metadata;
     }
 
@@ -333,4 +357,13 @@ public class RealEstatePost {
     public void setRealEstatePostPrices(List<RealEstatePostPrice> realEstatePostPrices) {
         this.realEstatePostPrices = realEstatePostPrices;
     }
+    
+    public Integer getPeriod() {
+        return period;
+    }
+
+    public void setPeriod(Integer period) {
+        this.period = period;
+    }
 }
+

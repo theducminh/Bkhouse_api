@@ -27,7 +27,7 @@ public class UserDTO {
     private EGender gender;
     private String provinceCode;
     private String districtCode;
-    private String wardCode;
+    
     private String address;
     @Size(max = 10, min = 10)
     private String phoneNumber;
@@ -129,13 +129,7 @@ public class UserDTO {
         this.districtCode = districtCode;
     }
 
-    public String getWardCode() {
-        return wardCode;
-    }
-
-    public void setWardCode(String wardCode) {
-        this.wardCode = wardCode;
-    }
+   
 
     public String getAddress() {
         return address;

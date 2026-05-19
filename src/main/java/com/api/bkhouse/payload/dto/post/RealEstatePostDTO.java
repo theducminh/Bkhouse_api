@@ -2,12 +2,14 @@ package com.api.bkhouse.payload.dto.post;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
-import org.locationtech.jts.geom.Point; 
+import org.locationtech.jts.geom.Point;
+import org.springframework.data.mongodb.core.aggregation.ArrayOperators.In;
+
 import com.api.bkhouse.constant.enumeric.EDirection;
 import com.api.bkhouse.constant.enumeric.EStatus;
 import com.api.bkhouse.constant.enumeric.EType;
 import com.api.bkhouse.payload.dto.*;
-
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.Instant;
 import java.util.List;
@@ -21,7 +23,7 @@ public class RealEstatePostDTO {
     private EType type;
 
     @NotNull(message = "Người đăng không được để trống")
-    private UserDTO owner;
+    private UserDTO ownerId;
 
     @NotBlank(message = "Tiêu đề không được để trống")
     private String title;
@@ -44,8 +46,7 @@ public class RealEstatePostDTO {
     @NotNull(message = "Quận/Huyện không được để trống")
     private DistrictDTO district;
 
-    @NotNull(message = "Phường/Xã không được để trống")
-    private WardDTO ward;
+    
 
     @NotNull(message = "Trạng thái không được để trống")
     private EStatus status;
@@ -53,13 +54,13 @@ public class RealEstatePostDTO {
     // LƯU Ý KỸ THUẬT: 
     // DTO có thể nhận String (ví dụ dạng "POINT(105.8 21.0)") từ Frontend
     // Sau đó Backend (Service/Mapper) sẽ convert String này thành org.locationtech.jts.geom.Point
-    private Point location; 
+    private String location; 
 
     @NotNull(message = "Trạng thái hiển thị không được để trống")
-    private Boolean isEnabled;
-
+    private Boolean enable;
+    
     @NotNull(message = "Trạng thái bán/cho thuê không được để trống")
-    private Boolean isSell;
+    private Boolean sell;
 
     private Integer priority;
 
@@ -78,6 +79,8 @@ public class RealEstatePostDTO {
     private Instant createdAt;
 
     private Instant updatedAt;
+
+    private Integer period;
 
     private List<RealEstatePostPriceDTO> realEstatePostPrices;
 
@@ -102,11 +105,11 @@ public class RealEstatePostDTO {
     }
 
     public UserDTO getOwnerId() {
-        return owner;
+        return ownerId;
     }
 
-    public void setOwnerId(UserDTO owner) {
-        this.owner = owner;
+    public void setOwnerId(UserDTO ownerId) {
+        this.ownerId = ownerId;
     }
 
     public String getTitle() {
@@ -165,13 +168,7 @@ public class RealEstatePostDTO {
         this.district = district;
     }
 
-    public WardDTO getWard() {
-        return ward;
-    }
-
-    public void setWard(WardDTO ward) {
-        this.ward = ward;
-    }
+    
 
     public EStatus getStatus() {
         return status;
@@ -181,28 +178,28 @@ public class RealEstatePostDTO {
         this.status = status;
     }
 
-    public Point getLocation() {
+    public String getLocation() {
         return location;
     }
 
-    public void setLocation(Point location) {
+    public void setLocation(String location) {
         this.location = location;
     }
 
-    public Boolean getIsEnabled() {
-        return isEnabled;
+    public Boolean getEnable() {
+        return enable;
     }
 
-    public void setIsEnabled(Boolean isEnabled) {
-        this.isEnabled = isEnabled;
+    public void setEnable(Boolean enable) {
+        this.enable = enable;
     }
 
-    public Boolean getIsSell() {
-        return isSell;
+    public Boolean getSell() {
+        return sell;
     }
 
-    public void setIsSell(Boolean isSell) {
-        this.isSell = isSell;
+    public void setSell(Boolean sell) {
+        this.sell = sell;
     }
 
     public Integer getPriority() {
@@ -283,5 +280,13 @@ public class RealEstatePostDTO {
 
     public void setRealEstatePostPrices(List<RealEstatePostPriceDTO> realEstatePostPrices) {
         this.realEstatePostPrices = realEstatePostPrices;
+    }
+
+    public Integer getPeriod() {
+        return period;
+    }
+
+    public void setPeriod(Integer period) {
+        this.period = period;
     }
 }

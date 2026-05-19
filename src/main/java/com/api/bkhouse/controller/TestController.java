@@ -1,6 +1,8 @@
 package com.api.bkhouse.controller;
 
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,17 +29,25 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/test")
 public class TestController {
-    @Autowired
-    private TestService testService;
+    
+    private final TestService testService;
 
-    @Autowired
-    private ModelMapper modelMapper;
+    private final ModelMapper modelMapper;
 
-    @Autowired
-    private NotifyService notifyService;
+  
+    private final NotifyService notifyService;
 
-    @Autowired
-    private RealEstatePostService realEstatePostService;
+  
+    private final RealEstatePostService realEstatePostService;
+
+    public TestController(TestService testService, ModelMapper modelMapper, NotifyService notifyService, RealEstatePostService realEstatePostService) {
+        this.testService = testService;
+        this.modelMapper = modelMapper;
+        this.notifyService = notifyService;
+        this.realEstatePostService = realEstatePostService;
+    }
+
+    private static final Logger logger = LoggerFactory.getLogger(TestController.class);
 
     @GetMapping("/all")
     public String allAccess() {
@@ -64,16 +74,16 @@ public class TestController {
 
     @GetMapping("/all-users")
     @PreAuthorize("hasRole('ROLE_AGENCY') or hasRole('ROLE_ADMIN') or hasRole('ROLE_USER') or hasRole('ROLE_ENTERPRISE')")
-    public ResponseEntity<BaseResponse> getAllUsers() {
+   public ResponseEntity<BaseResponse> getAllUsers() {
         List<User> users = testService.getAllUsers();
-        if (users.size() == 0) {
-            return ResponseEntity.ok(new BaseResponse(null, "Khong tim thay user nao", HttpStatus.NOT_FOUND));
+        if (users.isEmpty()) { 
+            return ResponseEntity.ok(new BaseResponse(null, "Không tìm thấy user nào", HttpStatus.NOT_FOUND));
         } else {
             List<UserDTO> userDTOS = users
                     .stream()
                     .map(this::convertToDto)
                     .collect(Collectors.toList());
-            return ResponseEntity.ok(new BaseResponse(users, "", HttpStatus.OK));
+            return ResponseEntity.ok(new BaseResponse(userDTOS, "", HttpStatus.OK));
         }
     }
 
@@ -84,7 +94,7 @@ public class TestController {
             notifyService.notifyToAllUsers("Hello world");
             return ResponseEntity.ok(new BaseResponse(null, "", HttpStatus.OK));
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Lỗi khi test notify: ", e);
             return ResponseEntity.ok(new BaseResponse(null, "", HttpStatus.INTERNAL_SERVER_ERROR));
         }
     }
@@ -93,10 +103,9 @@ public class TestController {
     @PreAuthorize("hasRole('ROLE_AGENCY') or hasRole('ROLE_ADMIN') or hasRole('ROLE_USER') or hasRole('ROLE_ENTERPRISE')")
     public ResponseEntity<BaseResponse> getCurrentUser(@CurrentUser UserDetailsImpl currentUser) {
         try {
-//            UserDetails userDetails = (UserDetailsImpl) authentication.getDetails();
-//            return ResponseEntity.ok(new BaseResponse(authentication.getDetails(), "", HttpStatus.OK));
             return ResponseEntity.ok(new BaseResponse(currentUser, "", HttpStatus.OK));
         } catch (Exception e) {
+            logger.error("Lỗi khi test current user: ", e);
             return ResponseEntity.ok(new BaseResponse(null, "", HttpStatus.INTERNAL_SERVER_ERROR));
         }
     }
@@ -108,7 +117,7 @@ public class TestController {
             realEstatePostService.calculatePricePerAreaUnit(date);
             return ResponseEntity.ok(new BaseResponse(null, "", HttpStatus.OK));
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Lỗi khi test thống kê rep: ", e);
             return ResponseEntity.ok(new BaseResponse(null, "", HttpStatus.INTERNAL_SERVER_ERROR));
         }
     }

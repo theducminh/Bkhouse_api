@@ -21,12 +21,12 @@ public interface PostCommentRepository extends JpaRepository<PostComment, Long> 
     boolean existsById(UUID id);
     @Query(value = "delete from post_comment where id = :id", nativeQuery = true)
     void deleteById(UUID id);
-    @Query(value = "select rep.owner_id as postOwner, pc.create_by as commentOwner \n" +
-            "from real_estate_post rep  inner join post_comment pc on rep.owner_id = pc.create_by\n" +
-            "and pc.id = :commentId and rep.enable = 1 \n" +
+    @Query(value = "select rep.owner_id as postOwner, pc.user_id as commentOwner \n" +
+            "from real_estate_posts rep  inner join post_comment pc on rep.owner_id = pc.created_by\n" +
+            "and pc.id = :commentId and rep.is_enabled = true \n" +
             "union\n" +
-            "select fp.create_by as postOwner, pc.create_by as commentOwner \n" +
-            "from forum_post fp  inner join post_comment pc on fp.create_by = pc.create_by\n" +
-            "and pc.id = :commentId and fp.enable = 1", nativeQuery = true)
+            "select fp.create_by as postOwner, pc.user_id as commentOwner \n" +
+            "from forum_post fp  inner join post_comment pc on fp.create_by = pc.created_by\n" +
+            "and pc.id = :commentId and fp.is_enabled = true", nativeQuery = true)
     Optional<ICommentCompare> compareOwner(@Param("commentId") UUID id);
 }

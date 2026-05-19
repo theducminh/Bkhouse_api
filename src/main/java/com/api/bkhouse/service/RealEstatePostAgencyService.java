@@ -1,21 +1,25 @@
 package com.api.bkhouse.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
 import com.api.bkhouse.constant.enumeric.ERepAgencyStatus;
 import com.api.bkhouse.entity.RealEstatePostAgency;
 import com.api.bkhouse.repository.RealEstatePostAgencyRepository;
 
-import javax.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
 public class RealEstatePostAgencyService {
-    @Autowired
-    private RealEstatePostAgencyRepository repository;
+    
+    private final RealEstatePostAgencyRepository repository;
+
+    public RealEstatePostAgencyService(RealEstatePostAgencyRepository repository) {
+        this.repository = repository;
+    }
 
     @Transactional
     public RealEstatePostAgency save(RealEstatePostAgency realEstatePostAgency) {
@@ -50,11 +54,8 @@ public class RealEstatePostAgencyService {
     }
 
     public boolean inArea(UUID repId, UUID agencyId) {
-        Integer integer = repository.checkInArea(repId, agencyId);
-        if (integer > 0) {
-            return true;
-        }
-        return false;
+        Long count = repository.checkInArea(repId, agencyId);
+        return count != null && count > 0;
     }
 
     public Optional<RealEstatePostAgency> findById(Long id) {

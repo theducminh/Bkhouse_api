@@ -1,8 +1,6 @@
 package com.api.bkhouse.entity;
 
 import javax.persistence.*;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -13,50 +11,38 @@ public class PostView {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "real_estate_post_id")
-    @NotNull
-    @NotBlank
+    @Column(name = "real_estate_post_id", nullable = false)
     private UUID realEstatePostId;
 
-    @Column(name = "create_by")
-    @NotNull
-    @NotBlank
-    private UUID createBy;
+    @Column(name = "user_id")
+    private UUID userId;
 
-    @Column(name = "create_at")
-    @NotNull
-    @NotBlank
-    private Instant createAt;
+    @Column(name = "device_id")
+    private String deviceId;
 
-    public Long getId() {
-        return id;
-    }
+    @Column(name = "ip_address", length = 45)
+    private String ipAddress;
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    @Column(name = "created_at")
+    private Instant createdAt;
 
-    public UUID getRealEstatePostId() {
-        return realEstatePostId;
-    }
+    // ================= GETTERS & SETTERS =================
 
-    public void setRealEstatePostId(UUID realEstatePostId) {
-        this.realEstatePostId = realEstatePostId;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public UUID getCreateBy() {
-        return createBy;
-    }
+    public UUID getRealEstatePostId() { return realEstatePostId; }
+    public void setRealEstatePostId(UUID realEstatePostId) { this.realEstatePostId = realEstatePostId; }
 
-    public void setCreateBy(UUID createBy) {
-        this.createBy = createBy;
-    }
+    public UUID getUserId() { return userId; }
+    public void setUserId(UUID userId) { this.userId = userId; }
 
-    public Instant getCreateAt() {
-        return createAt;
-    }
+    public String getDeviceId() { return deviceId; }
+    public void setDeviceId(String deviceId) { this.deviceId = deviceId; }
 
-    public void setCreateAt(Instant createAt) {
-        this.createAt = createAt;
-    }
+    public String getIpAddress() { return ipAddress; }
+    public void setIpAddress(String ipAddress) { this.ipAddress = ipAddress; }
+
+    public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

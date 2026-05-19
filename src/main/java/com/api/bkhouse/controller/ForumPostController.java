@@ -28,28 +28,26 @@ import java.util.UUID;
 @RestController
 @CrossOrigin(origins = "*", maxAge = 3600)
 public class ForumPostController {
-    @Autowired
-    private ForumPostService service;
+    private final ForumPostService service;
+    private final ModelMapper modelMapper;
+    private final PostMediaService postMediaService;
+    private final PhotoService photoService;
 
-    @Autowired
-    private ModelMapper modelMapper;
-
-    @Autowired
-    private PostMediaService postMediaService;
-
-    @Autowired
-    private PhotoService photoService;
+    public ForumPostController(ForumPostService service, ModelMapper modelMapper, PostMediaService postMediaService, PhotoService photoService) {
+        this.service = service;
+        this.modelMapper = modelMapper;
+        this.postMediaService = postMediaService;
+        this.photoService = photoService;
+    }
 
     @PostMapping("/api/v1/forum-post")
     @PreAuthorize("hasRole('ROLE_AGENCY') or hasRole('ROLE_ADMIN') or hasRole('ROLE_USER') or hasRole('ROLE_ENTERPRISE')")
     public ResponseEntity<BaseResponse> create(@RequestBody ForumPostDTO body, @CurrentUser UserDetailsImpl currentUser) {
         try {
             service.save(modelMapper.map(body, ForumPost.class), currentUser.getId(), false);
-            body.getPostMedia()
-                    .stream()
-                    .forEach(e -> {
-                        postMediaService.save(modelMapper.map(e, PostMedia.class));
-                    });
+            body.getPostMedia().forEach(e -> {
+                postMediaService.save(modelMapper.map(e, PostMedia.class));
+            });
             return ResponseEntity.ok(new BaseResponse(
                     null,
                     "Đăng bài viết thành công.",
@@ -81,11 +79,9 @@ public class ForumPostController {
                 ));
             }
             service.save(modelMapper.map(body, ForumPost.class), currentUser.getId(), true);
-            body.getPostMedia()
-                    .stream()
-                    .forEach(e -> {
-                        postMediaService.save(modelMapper.map(e, PostMedia.class));
-                    });
+            body.getPostMedia().forEach(e -> {
+                postMediaService.save(modelMapper.map(e, PostMedia.class));
+            });
             return ResponseEntity.ok(new BaseResponse(
                     null,
                     "Cập nhật bài viết thành công.",
@@ -134,17 +130,15 @@ public class ForumPostController {
         try {
             Page<ForumPost> forumPosts = service.findByUser(userDetails.getId(), pageSize, page);
             List<ForumPostDTO> forumPostDTOS = new ArrayList<>();
-            forumPosts.
-                    stream()
-                    .forEach(e -> {
-                        List<PostMedia> postMediaList = postMediaService.findByPostId(e.getId());
-                        ForumPostDTO forumPostDTO = modelMapper.map(e, ForumPostDTO.class);
-                        forumPostDTO.setPostMedia(
-                                postMediaList.stream()
-                                        .map(ee -> modelMapper.map(ee, PostMediaDTO.class))
-                                        .collect(Collectors.toList()));
-                        forumPostDTOS.add(forumPostDTO);
-                    });
+            forumPosts.forEach(e -> {
+                List<PostMedia> postMediaList = postMediaService.findByPostId(e.getId());
+                ForumPostDTO forumPostDTO = modelMapper.map(e, ForumPostDTO.class);
+                forumPostDTO.setPostMedia(
+                        postMediaList.stream()
+                                .map(ee -> modelMapper.map(ee, PostMediaDTO.class))
+                                .collect(Collectors.toList()));
+                forumPostDTOS.add(forumPostDTO);
+            });
             return ResponseEntity.ok(new BaseResponse(forumPostDTOS, "", HttpStatus.OK));
         } catch (Exception e) {
             return ResponseEntity.ok(new BaseResponse(
@@ -162,17 +156,15 @@ public class ForumPostController {
         try {
             Page<ForumPost> forumPosts = service.findAllWithPageable(pageSize, page);
             List<ForumPostDTO> forumPostDTOS = new ArrayList<>();
-            forumPosts.
-                    stream()
-                    .forEach(e -> {
-                        List<PostMedia> postMediaList = postMediaService.findByPostId(e.getId());
-                        ForumPostDTO forumPostDTO = modelMapper.map(e, ForumPostDTO.class);
-                        forumPostDTO.setPostMedia(
-                                postMediaList.stream()
-                                        .map(ee -> modelMapper.map(ee, PostMediaDTO.class))
-                                        .collect(Collectors.toList()));
-                        forumPostDTOS.add(forumPostDTO);
-                    });
+            forumPosts.forEach(e -> {
+                List<PostMedia> postMediaList = postMediaService.findByPostId(e.getId());
+                ForumPostDTO forumPostDTO = modelMapper.map(e, ForumPostDTO.class);
+                forumPostDTO.setPostMedia(
+                        postMediaList.stream()
+                                .map(ee -> modelMapper.map(ee, PostMediaDTO.class))
+                                .collect(Collectors.toList()));
+                forumPostDTOS.add(forumPostDTO);
+            });
             return ResponseEntity.ok(new BaseResponse(forumPostDTOS, "", HttpStatus.OK));
         } catch (Exception e) {
             return ResponseEntity.ok(new BaseResponse(
@@ -239,16 +231,16 @@ public class ForumPostController {
             if (forumPost == null) {
                 return ResponseEntity.ok(new BaseResponse(null, "Không tìm thấy bài viết.", HttpStatus.NO_CONTENT));
             }
-            if (!userDetails.getId().equals("admin")) {
+
+
+            boolean isAdmin = userDetails.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+            if (!isAdmin) {
                 if (!forumPost.getCreateBy().equals(userDetails.getId())) {
                     return ResponseEntity.ok(new BaseResponse(null, "Bạn không thể xóa bài viết này.", HttpStatus.NO_CONTENT));
                 }
             }
-//            List<PostMedia> postMediaList = postMediaService.findByPostId(postId);
-//            postMediaList.stream().forEach(e -> {
-//                photoService.deletePhotoById(e.getId());
-//            });
-//            postMediaService.deleteByPostId(postId);
             service.deleteById(postId);
             return ResponseEntity.ok(new BaseResponse(null, "Xóa bài viết thành công.", HttpStatus.OK));
         } catch (Exception e) {

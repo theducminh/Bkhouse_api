@@ -3,6 +3,7 @@ package com.api.bkhouse.service;
 import com.api.bkhouse.constant.Message;
 import com.api.bkhouse.constant.enumeric.ERepAgencyStatus;
 import com.api.bkhouse.repository.UserDeviceTokenRepository;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.messaging.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,20 +13,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
-import java.util.UUID;
 @Service
 public class NotifyService {
     @Value("${app.domain}")
     private String domain;
 
-    @Autowired
-    private UserDeviceTokenRepository userDeviceTokenRepository;
+    private final UserDeviceTokenRepository userDeviceTokenRepository;
 
-    @Autowired
-    private RestTemplate restTemplate;
 
-    @Autowired
-    private FirebaseMessaging fcm;
+    private final FirebaseMessaging fcm;
+
+    public NotifyService(UserDeviceTokenRepository userDeviceTokenRepository, FirebaseMessaging fcm) {
+        this.userDeviceTokenRepository = userDeviceTokenRepository;
+        this.fcm = fcm;
+    }
 
     private Logger logger = LoggerFactory.getLogger(NotifyService.class);
 
@@ -96,31 +97,60 @@ public class NotifyService {
 
     private void sendNotify(List<String> tokens, String message, String link) {
         try {
-            for (String token : tokens) {
-                logger.info("token: {}", token);
-                WebpushConfig webpushConfig = WebpushConfig.builder()
-                        .setNotification(
-                                WebpushNotification.builder()
-                                        .setBody(message).build())
-                        .setFcmOptions(
-                                WebpushFcmOptions.builder()
-                                        .setLink(link).build())
-                        .build();
+    String projectId = FirebaseApp.getInstance().getOptions().getProjectId();
+    logger.info("🔥 Backend đang gửi thông báo tới dự án Firebase có ID: {}", projectId);
+} catch (Exception e) {
+    logger.error("Backend chưa khởi tạo Firebase App!");
+}
+        if (tokens == null || tokens.isEmpty()) {
+            return;
+        }
 
-                com.google.firebase.messaging.Message msg =
-                        com.google.firebase.messaging.Message.builder()
-                                .setToken(token)
-                                .setWebpushConfig(webpushConfig)
-                                .setNotification(
-                                        Notification.builder()
-                                                .setTitle("Bkland")
-                                                .setBody(message)
-                                                .build())
-                                .build();
-                fcm.send(msg);
+        try {
+            logger.info("Sending batch notification to {} tokens", tokens.size());
+            
+            WebpushConfig webpushConfig = WebpushConfig.builder()
+                    .setNotification(
+                            WebpushNotification.builder()
+                            .setTitle("Bkhouse thông báo")
+                                    .setBody(message).build())
+                    .setFcmOptions(
+                            WebpushFcmOptions.builder()
+                                    .setLink(link).build())
+                    .build();
+
+            Notification fcmNotification = Notification.builder()
+                    .setTitle("Bkhouse thông báo")
+                    .setBody(message)
+                    .build();
+
+            // Firebase hỗ trợ tối đa 500 tokens/lần. Nếu list của bác to hơn 500, cần chia nhỏ list ra.
+            // Ở đây giả định list < 500.
+            MulticastMessage multicastMessage = MulticastMessage.builder()
+                    .addAllTokens(tokens)
+                    .setWebpushConfig(webpushConfig)
+                    .setNotification(fcmNotification)
+                    .build();
+            try {
+    logger.info("📩 Gửi tới các Token: {}", tokens);
+    logger.info("📩 Body thông báo: {}", message);
+} catch (Exception e) {}
+
+            BatchResponse response = fcm.sendEachForMulticast(multicastMessage);
+            logger.info("Successfully sent {} messages. Failed: {}", response.getSuccessCount(), response.getFailureCount());
+
+            // 🚨 THÊM ĐOẠN NÀY ĐỂ BẮT TẬN TAY LỖI:
+            if (response.getFailureCount() > 0) {
+                List<SendResponse> responses = response.getResponses();
+                for (int i = 0; i < responses.size(); i++) {
+                    if (!responses.get(i).isSuccessful()) {
+                        logger.error("❌ Lý do từ chối Token: {}", responses.get(i).getException().getMessage());
+                    }
+                }
             }
+
         } catch (FirebaseMessagingException e) {
-            e.printStackTrace();
+            logger.error("Error sending FCM message: ", e);
         }
     }
 }

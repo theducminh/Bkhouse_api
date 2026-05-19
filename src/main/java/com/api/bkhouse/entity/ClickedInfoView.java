@@ -15,17 +15,14 @@ public class ClickedInfoView {
 
     @Column(name = "real_estate_post_id")
     @NotNull
-    @NotBlank
     private UUID realEstatePostId;
 
     @Column(name = "create_by")
     @NotNull
-    @NotBlank
     private UUID createBy;
 
     @Column(name = "create_at")
     @NotNull
-    @NotBlank
     private Instant createAt;
 
     public Long getId() {

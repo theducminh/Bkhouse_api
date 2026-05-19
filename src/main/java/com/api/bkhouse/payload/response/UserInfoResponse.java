@@ -6,7 +6,6 @@ import com.api.bkhouse.constant.enumeric.EGender;
 import com.api.bkhouse.payload.dto.DistrictDTO;
 import com.api.bkhouse.payload.dto.ProvinceDTO;
 import com.api.bkhouse.payload.dto.RoleDTO;
-import com.api.bkhouse.payload.dto.WardDTO;
 
 import java.time.Instant;
 //import java.util.Date;
@@ -27,7 +26,6 @@ public class UserInfoResponse {
     private EGender gender;
     private ProvinceDTO province;
     private DistrictDTO district;
-    private WardDTO ward;
     private String address;
     @Size(max = 10, min = 10)
     private String phoneNumber;
@@ -129,14 +127,7 @@ public class UserInfoResponse {
         this.district = district;
     }
 
-    public WardDTO getWard() {
-        return ward;
-    }
-
-    public void setWard(WardDTO ward) {
-        this.ward = ward;
-    }
-
+    
     public String getAddress() {
         return address;
     }

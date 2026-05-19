@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import com.api.bkhouse.entity.PostComment;
 import com.api.bkhouse.entity.response.ICommentCompare;
 import com.api.bkhouse.repository.PostCommentRepository;
+import com.api.bkhouse.repository.UserRepository;
 
 import javax.transaction.Transactional;
 import java.util.List;
@@ -14,8 +15,14 @@ import java.util.UUID;
 
 @Service
 public class PostCommentService {
-    @Autowired
-    private PostCommentRepository repository;
+    
+    private final PostCommentRepository repository;
+    private final UserRepository userRepository;
+
+    public PostCommentService(PostCommentRepository repository, UserRepository userRepository) {
+        this.repository = repository;
+        this.userRepository = userRepository;
+    }
 
     @Transactional
     public PostComment save(PostComment postComment) {
@@ -36,7 +43,7 @@ public class PostCommentService {
     }
 
     public boolean canDelete(UUID id, UUID userId) {
-        if (userId.equals(UUID.fromString("admin"))) {
+        if (userRepository.isUserAdmin(userId)) {
             return true;
         }
         Optional<ICommentCompare> commentCompareOptional = repository.compareOwner(id);
@@ -44,9 +51,7 @@ public class PostCommentService {
             return false;
         }
         ICommentCompare commentCompare = commentCompareOptional.get();
-        if (userId.equals(commentCompare.getCommentOwner()) || userId.equals(commentCompare.getPostOwner())) {
-            return true;
-        }
-        return false;
+        return userId.equals(commentCompare.getCommentOwner()) || 
+               userId.equals(commentCompare.getPostOwner());
     }
 }

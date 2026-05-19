@@ -3,13 +3,22 @@ package com.api.bkhouse.payload.request;
 import java.util.List;
 import java.util.UUID;
 
-import com.api.bkhouse.payload.dto.DistrictDTO;
+import com.api.bkhouse.constant.enumeric.EType; // 🚨 Nhớ import Enum EType
 
 public class PriceFluctuationRequest {
     private UUID userId;
+    
+    // 🚨 Thêm 3 trường cấu hình mới
+    private String provinceCode;
+    private EType propertyType; 
+    
     private List<String> districts;
-    private Long districtPrice;
+    
+    // 🚨 Đã xóa districtPrice
+    
     private boolean enable;
+
+    // === GETTERS & SETTERS ===
 
     public UUID getUserId() {
         return userId;
@@ -19,20 +28,30 @@ public class PriceFluctuationRequest {
         this.userId = userId;
     }
 
+    public String getProvinceCode() {
+        return provinceCode;
+    }
+
+    public void setProvinceCode(String provinceCode) {
+        this.provinceCode = provinceCode;
+    }
+
+    
+
+    public EType getPropertyType() {
+        return propertyType;
+    }
+
+    public void setPropertyType(EType propertyType) {
+        this.propertyType = propertyType;
+    }
+
     public List<String> getDistricts() {
         return districts;
     }
 
     public void setDistricts(List<String> districts) {
         this.districts = districts;
-    }
-
-    public Long getDistrictPrice() {
-        return districtPrice;
-    }
-
-    public void setDistrictPrice(Long districtPrice) {
-        this.districtPrice = districtPrice;
     }
 
     public boolean isEnable() {

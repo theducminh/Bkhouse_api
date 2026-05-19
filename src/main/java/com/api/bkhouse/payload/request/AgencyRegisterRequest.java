@@ -11,7 +11,6 @@ import java.util.UUID;
 
 public class AgencyRegisterRequest {
     @NotNull
-    @NotBlank
     private UUID userId;
     @NotEmpty
     private List<DistrictDTO> districts;

@@ -5,57 +5,49 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
 import com.api.bkhouse.constant.enumeric.EDirection;
+import java.time.Instant;
 
 @Entity
 @Table(name = "house")
 public class House {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @OneToOne
     @JoinColumn(name = "real_estate_post_id")
     private RealEstatePost realEstatePost;
 
-    @Column(name = "no_floor")
-    @NotNull
-    @NotBlank
+    @Column(name = "no_floors")
     private Integer noFloor;
 
-    @Column(name = "no_bedroom")
-    @NotNull
-    @NotBlank
+    @Column(name = "no_bedrooms")
     private Integer noBedroom;
 
-    @Column(name = "no_bathroom")
-    @NotNull
-    @NotBlank
+    @Column(name = "no_bathrooms")
     private Integer noBathroom;
 
     @Column(name = "furniture")
-    @NotNull
-    @NotBlank
     private String furniture;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "balcony_direction")
-    @NotBlank
     private EDirection balconyDirection;
 
-    @Column(name = "front_width")
-    @NotNull
-    @NotBlank
-    private Double frontWidth;
-
-    @Column(name = "behind_width")
-    @NotNull
-    @NotBlank
-    private Double behindWidth;
 
     @Column(name = "street_width")
-    @NotNull
-    @NotBlank
     private Double streetWidth;
+
+    @Column(name = "front_width")
+    private Double frontWidth;
+
+    @Column (name = "behind_width")
+    private Double behindWidth;
+
+    @Column(name = "house_orientation")
+    private String houseOrientation;
+
+    @Column (name = "updated_at")
+    private Instant updatedAt;
 
     public Long getId() {
         return id;
@@ -112,21 +104,12 @@ public class House {
     public void setBalconyDirection(EDirection balconyDirection) {
         this.balconyDirection = balconyDirection;
     }
-
-    public Double getFrontWidth() {
-        return frontWidth;
+    public String getHouseOrientation() {
+        return houseOrientation;
     }
 
-    public void setFrontWidth(Double frontWidth) {
-        this.frontWidth = frontWidth;
-    }
-
-    public Double getBehindWidth() {
-        return behindWidth;
-    }
-
-    public void setBehindWidth(Double behindWidth) {
-        this.behindWidth = behindWidth;
+    public void setHouseOrientation(String houseOrientation) {
+        this.houseOrientation = houseOrientation;
     }
 
     public Double getStreetWidth() {
@@ -135,5 +118,26 @@ public class House {
 
     public void setStreetWidth(Double streetWidth) {
         this.streetWidth = streetWidth;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+    public Double getFrontWidth() {
+        return frontWidth;
+    }
+    public void setFrontWidth(Double frontWidth) {
+        this.frontWidth = frontWidth;
+    }
+
+    public Double getBehindWidth() {
+        return behindWidth;
+    }
+    public void setBehindWidth(Double behindWidth) {
+        this.behindWidth = behindWidth;
     }
 }

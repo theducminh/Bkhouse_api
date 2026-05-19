@@ -1,6 +1,8 @@
 package com.api.bkhouse.controller;
 
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,11 +22,16 @@ import java.util.UUID;
 @RestController
 @CrossOrigin(origins = "*", maxAge = 3600)
 public class SpecialAccountController {
-    @Autowired
-    private SpecialAccountService service;
+    private final SpecialAccountService service;
 
-    @Autowired
-    private ModelMapper modelMapper;
+    private final ModelMapper modelMapper;
+
+    private static final Logger logger = LoggerFactory.getLogger(SpecialAccountController.class);
+
+    public SpecialAccountController(SpecialAccountService service, ModelMapper modelMapper) {
+        this.service = service;
+        this.modelMapper = modelMapper;
+     }
 
     @PostMapping("/api/no-auth/special-account")
     public ResponseEntity<BaseResponse> createSpecialAccount(@RequestBody SpecialAccountDTO specialAccountDTO) {
@@ -33,6 +40,7 @@ public class SpecialAccountController {
             return ResponseEntity.ok(new BaseResponse(convertToDTO(serviceResponse),
                     "", HttpStatus.OK));
         } catch (Exception e) {
+            logger.error("Lỗi khi tạo special account no-auth: ", e);
             return ResponseEntity.ok(new BaseResponse(null,
                     "Đã xảy ra lỗi khi thực thi. " + e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR));
@@ -51,6 +59,7 @@ public class SpecialAccountController {
             }
             return ResponseEntity.ok(new BaseResponse(agencyInfoResponse, "", HttpStatus.OK));
         } catch (Exception e) {
+            logger.error("Lỗi khi lấy thông tin agency: ", e);
             return ResponseEntity.ok(new BaseResponse(null,
                     "Đã xảy ra lỗi khi lấy thông tin đăng ký tài khoản môi giới. " + e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR));
@@ -77,7 +86,6 @@ public class SpecialAccountController {
     @DeleteMapping("/api/v1/special-account/agency/{userId}")
     @PreAuthorize("hasRole('ROLE_AGENCY')")
     public ResponseEntity<BaseResponse> deleteAgency(@PathVariable("userId") UUID userId) {
-//        return ResponseEntity.ok(service.deleteAgency(userId));
         try {
             service.userRoleDeleteByUserId(userId);
             service.agencyDistrictDeleteByUserId(userId);
@@ -86,6 +94,7 @@ public class SpecialAccountController {
                     "Hủy đăng ký tài khoản môi giới thành công.",
                     HttpStatus.OK));
         } catch (Exception e) {
+            logger.error("Lỗi khi hủy đăng ký agency: ", e);
             return ResponseEntity.ok(new BaseResponse(null,
                     "Đã xảy ra lỗi khi hủy đăng ký tài khoản môi giới. " + e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR));
@@ -107,7 +116,7 @@ public class SpecialAccountController {
                     modelMapper.map(specialAccount, SpecialAccountDTO.class),
                     "", HttpStatus.OK));
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Lỗi khi lấy thông tin special account: ", e);
             return ResponseEntity.ok(new BaseResponse(
                     null,
                     "Đã xảy ra lỗi khi lấy thông tin người dùng. " + e.getMessage(),
@@ -122,6 +131,7 @@ public class SpecialAccountController {
             service.update(modelMapper.map(specialAccountDTO, SpecialAccount.class));
             return ResponseEntity.ok(new BaseResponse(null, "", HttpStatus.OK));
         } catch (Exception e) {
+            logger.error("Lỗi khi cập nhật special account: ", e);
             return ResponseEntity.ok(new BaseResponse(
                     null,
                     "Đã xảy ra lỗi khi cập nhật thông tin người dùng. " + e.getMessage(),
@@ -131,10 +141,11 @@ public class SpecialAccountController {
 
     @GetMapping("/api/v1/special-account/rep/{repId}")
     @PreAuthorize("hasRole('ROLE_USER')")
-    public ResponseEntity<BaseResponse> listAgencyByRepDistrict(@PathVariable String repId) {
+    public ResponseEntity<BaseResponse> listAgencyByRepDistrict(@PathVariable UUID repId) {
         try {
             return ResponseEntity.ok(new BaseResponse(service.listAgencyByRepDistrict(repId), "", HttpStatus.OK));
         } catch (Exception e) {
+            logger.error("Lỗi khi lấy danh sách agency theo khu vực: ", e);
             return ResponseEntity.ok(new BaseResponse(
                     null,
                     "Đã xảy ra lỗi khi lấy danh sách môi giới hoạt động trong khu vực đăng bài.",

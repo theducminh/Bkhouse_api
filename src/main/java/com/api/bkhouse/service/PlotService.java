@@ -10,11 +10,15 @@ import java.util.UUID;
 
 @Service
 public class PlotService {
-    @Autowired
-    private PlotRepository repository;
+    
+    private final PlotRepository repository;
+
+    public PlotService(PlotRepository repository) {
+        this.repository = repository;
+    }
 
     public Plot findByRealEstatePostId(UUID id) {
-        return repository.findByRealEstatePostId(id).get();
+        return repository.findByRealEstatePostId(id).orElse(null);
     }
 
     @Transactional
@@ -27,6 +31,7 @@ public class PlotService {
         return repository.save(plot);
     }
 
+    @Transactional
     public void deleteByRealEstatePostId(UUID realEstatePostId) {
         repository.deleteByRealEstatePostId(realEstatePostId);
     }

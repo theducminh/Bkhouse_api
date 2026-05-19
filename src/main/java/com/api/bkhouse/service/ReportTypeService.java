@@ -1,18 +1,21 @@
 package com.api.bkhouse.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
 import com.api.bkhouse.entity.ReportType;
 import com.api.bkhouse.repository.ReportTypeRepository;
 
-import javax.transaction.Transactional;
 import java.util.List;
 
 @Service
 public class ReportTypeService {
-    @Autowired
-    private ReportTypeRepository repository;
+    private final ReportTypeRepository repository;
+
+    public ReportTypeService(ReportTypeRepository repository) {
+        this.repository = repository;
+    }
 
     @Transactional
     public ReportType save(ReportType reportType) {
@@ -37,7 +40,7 @@ public class ReportTypeService {
     }
 
     @Transactional
-    public void deletePostReportType(Integer id) {
+    public void deleteReportType(Integer id) {
         repository.deleteById(id);
     }
 }

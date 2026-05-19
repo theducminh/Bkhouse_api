@@ -14,6 +14,7 @@ import java.util.UUID;
 public class RealEstatePostPrice {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
 
     @ManyToOne
@@ -22,7 +23,6 @@ public class RealEstatePostPrice {
     private RealEstatePost realEstatePost;
 
     @Column(name = "price")
-    @NotBlank
     @NotNull
     private Double price;
 

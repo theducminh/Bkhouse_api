@@ -2,6 +2,7 @@ package com.api.bkhouse.service;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -20,7 +21,6 @@ import com.api.bkhouse.repository.SpecialAccountRepository;
 import com.api.bkhouse.repository.UserRepository;
 import com.api.bkhouse.util.Util;
 
-import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -28,17 +28,20 @@ import java.util.UUID;
 
 @Service
 public class SpecialAccountService {
-    @Autowired
-    private SpecialAccountRepository repository;
+    private final SpecialAccountRepository repository;
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
-    @Autowired
-    private SpecialAccountPayRepository specialAccountPayRepository;
+    private final SpecialAccountPayRepository specialAccountPayRepository;
 
-    @Autowired
-    private ModelMapper modelMapper;
+    private final ModelMapper modelMapper;  
+
+    public SpecialAccountService(SpecialAccountRepository repository, UserRepository userRepository, SpecialAccountPayRepository specialAccountPayRepository, ModelMapper modelMapper) {
+        this.repository = repository;
+        this.userRepository = userRepository;
+        this.specialAccountPayRepository = specialAccountPayRepository;
+        this.modelMapper = modelMapper;
+    }
 
     @Transactional
     public SpecialAccount addSpecialAccount(SpecialAccount specialAccount) {
@@ -199,17 +202,10 @@ public class SpecialAccountService {
     }
 
     public boolean isAgency(UUID userId) {
-        Optional<User> userOptional = userRepository.findById(userId);
-        if (userOptional.isEmpty()) {
-            return false;
-        }
-        Role roleAgency = new Role();
-        roleAgency.setId(2);
-        roleAgency.setName(ERole.ROLE_AGENCY);
-        if (userOptional.get().getRoles().contains(roleAgency)) {
-            return true;
-        }
-        return false;
+        return userRepository.findById(userId)
+                .map(user -> user.getRoles().stream()
+                        .anyMatch(role -> ERole.ROLE_AGENCY.equals(role.getName())))
+                .orElse(false);
     }
 
     public List<String> getAllDistrictCodeOfAgency(UUID userId) {
@@ -217,11 +213,7 @@ public class SpecialAccountService {
     }
 
     public SpecialAccount findById(UUID userId) {
-        Optional<SpecialAccount> specialAccount = repository.findByUserId(userId);
-        if (specialAccount.isEmpty()) {
-            return null;
-        }
-        return specialAccount.get();
+       return repository.findByUserId(userId).orElse(null);
     }
 
     @Transactional
@@ -229,7 +221,7 @@ public class SpecialAccountService {
         repository.save(specialAccount);
     }
 
-    public List<IAgencyRep> listAgencyByRepDistrict(String realEstatePostId) {
+    public List<IAgencyRep> listAgencyByRepDistrict(UUID realEstatePostId) {
         return repository.listAgencyByRepDistrict(realEstatePostId);
     }
 }

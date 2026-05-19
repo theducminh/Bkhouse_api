@@ -1,7 +1,7 @@
 package com.api.bkhouse.entity.response;
 
 import java.time.Instant;
-
+import java.util.UUID;
 public interface IRepAdmin {
     String getId();
     String getType();

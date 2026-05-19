@@ -12,12 +12,17 @@ import java.util.List;
 
 @Repository
 public interface ReportTypeRepository extends JpaRepository<ReportType, Integer> {
+    
+    // JPA tự động map chuẩn với trường isForum trong Entity
     List<ReportType> findByIsForum(boolean isForum);
 
+    // LƯU Ý: Nhờ ON DELETE CASCADE ở DB, hàm này không còn bắt buộc phải gọi trước khi xóa ReportType,
+    // nhưng vẫn giữ lại để tương thích với code cũ ở Service của bác.
     @Modifying
-    @Query(value = "delete from post_report_type where report_type_id = :reportTypeId ;", nativeQuery = true)
+    @Query(value = "DELETE FROM post_report_type WHERE report_type_id = :reportTypeId", nativeQuery = true)
     void deletePostReportTypeByReportTypeId(@Param("reportTypeId") Integer reportTypeId);
 
-    @Query(value = "select count(*) from post_report_type where report_type_id = :reportTypeId", nativeQuery = true)
+    // Viết hoa từ khóa SQL cho chuẩn Convention
+    @Query(value = "SELECT COUNT(*) FROM post_report_type WHERE report_type_id = :reportTypeId", nativeQuery = true)
     Integer countByRTId(@Param("reportTypeId") Integer reportTypeId);
 }

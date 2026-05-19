@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.api.bkhouse.entity.SpecialAccount;
 import com.api.bkhouse.entity.response.IAgencyRep;
@@ -17,33 +18,43 @@ import java.util.UUID;
 @Repository
 public interface SpecialAccountRepository extends JpaRepository<SpecialAccount, UUID> {
     Optional<SpecialAccount> findByUserId(UUID userId);
+   
+    @Transactional
+    @Modifying
     void deleteByUserId(UUID userId);
 
-    @Query(value = "select d.* from districts d, agency_district ad " +
-            "where d.code = ad.district_code and ad.user_id = :userId ;",
-            nativeQuery = true)
+    // Đã chuyển sang INNER JOIN chuẩn chỉ
+    @Query(value = "SELECT d.* FROM districts d " +
+                   "INNER JOIN agency_district ad ON d.code = ad.district_code " +
+                   "WHERE ad.user_id = :userId", 
+           nativeQuery = true)
     List<IDistrict> findAllDistrictsAgency(@Param("userId") UUID userId);
 
     @Modifying
+    @Transactional
     @Query(value = "delete from agency_district where user_id=:userId", nativeQuery = true)
     void agencyDistrictDeleteByUserId(@Param("userId") UUID userId);
 
     @Modifying
-    @Query(value = "delete from user_role where user_id=:userId and role_id=2", nativeQuery = true)
+    @Transactional
+    @Query(value = "delete from user_role where user_id=:userId and id=4", nativeQuery = true)
     void userRoleDeleteByUserId(@Param("userId") UUID userId);
 
     @Query(value = "select district_code from agency_district where user_id = :userId", nativeQuery = true)
     List<String> getAllDistrictCodeOfAgency(@Param("userId") UUID userId);
 
-    @Query(value = "select distinct concat(u.first_name, ' ', u.middle_name, ' ', u.last_name) as fullName, \n" +
-            "u.phone_number as phoneNumber, u.id\n" +
-            "from agency_district ad, special_accounts sa, user u, real_estate_post rep\n" +
-            "where rep.district_code = ad.district_code\n" +
-            "and ad.enable = 1 \n" +
-            "and ad.user_id = sa.user_id\n" +
-            "and sa.is_agency = 1\n" +
-            "and sa.user_id = u.id \n" +
-            "and rep.id = :repId \n" +
-            "and u.id not in (select agency_id from real_estate_post_agency where real_estate_post_id = :repId )", nativeQuery = true)
-    List<IAgencyRep> listAgencyByRepDistrict(@Param("repId") String repId);
+
+    //Lấy danh sách môi giới theo quận của bài đăng bất động sản
+    @Query(value = "SELECT DISTINCT CONCAT_WS(' ', u.first_name, u.middle_name, u.last_name) AS fullName, " +
+                   "u.phone_number AS phoneNumber, CAST(u.id AS varchar) AS id " +
+                   "FROM agency_district ad " +
+                   "INNER JOIN special_account sa ON ad.user_id = sa.user_id " +
+                   "INNER JOIN users u ON sa.user_id = u.id " +
+                   "INNER JOIN real_estate_posts rep ON rep.district_code = ad.district_code " +
+                   "WHERE ad.is_enabled = true " + // Giả sử cột enable của agency_district đã đổi thành is_enabled
+                   "AND sa.is_agency = true " +
+                   "AND rep.id = :repId " +
+                   "AND u.id NOT IN (SELECT CAST(agency_id AS uuid) FROM real_estate_post_agency WHERE real_estate_post_id = :repId)", 
+           nativeQuery = true)
+    List<IAgencyRep> listAgencyByRepDistrict(@Param("repId") UUID repId);
 }

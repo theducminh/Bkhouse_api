@@ -27,24 +27,26 @@ import java.util.UUID;
 
 /**
  *
- * @author dieppv
+ * @author ducnm
  */
 @RestController
 @CrossOrigin(origins = "*", maxAge = 3600)
 public class PhotoController {
 
-    @Autowired
     private PhotoService photoService;
-
-    @Autowired
     private PostMediaService postMediaService;
 
-    private Logger logger = LoggerFactory.getLogger(this.getClass());
+    public PhotoController(PhotoService photoService, PostMediaService postMediaService) {
+        this.photoService = photoService;
+        this.postMediaService = postMediaService;
+    }
+
+    private static final Logger logger = LoggerFactory.getLogger(PhotoController.class);
     
     @PostMapping("/api/v1/photos")
     @PreAuthorize("hasRole('ROLE_AGENCY') or hasRole('ROLE_ADMIN') or hasRole('ROLE_USER') or hasRole('ROLE_ENTERPRISE')")
     public ResponseEntity<BaseResponse> addPhoto(@RequestParam("title") String title,
-                                                 @RequestParam("image") MultipartFile image, Model model) {
+                                                 @RequestParam("image") MultipartFile image) {
         try {
             String id = photoService.addPhoto(title, image);
             return ResponseEntity.ok(new BaseResponse(id, "", HttpStatus.OK));
@@ -84,6 +86,7 @@ public class PhotoController {
 
             return ResponseEntity.ok(new BaseResponse(null, "Xóa ảnh thành công.", HttpStatus.OK));
         } catch (Exception e) {
+            logger.error("Lỗi xóa ảnh với ID: " + postMediaId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new BaseResponse(null, "Đã xảy ra lỗi khi xóa ảnh. " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR));
         }
@@ -91,18 +94,22 @@ public class PhotoController {
 
 
     @GetMapping("/api/no-auth/photos/{id}")
-    public ResponseEntity<BaseResponse> getPhoto(@PathVariable String id, Model model) {
+    public ResponseEntity<BaseResponse> getPhoto(@PathVariable String id) { // 🚨 Đã xóa 'Model model' thừa
         try {
             Photo photo = photoService.getPhoto(id);
+            
+            //  Bổ sung check null do bên PhotoService ta đã đổi thành .orElse(null) thay vì văng Exception
+            if (photo == null) {
+                 return ResponseEntity.ok(new BaseResponse(null, "Không tìm thấy ảnh", HttpStatus.NO_CONTENT));
+            }
+            
             MediaResponse response = new MediaResponse(photo.getId().toString(),
                     photo.getTitle(),
                     Base64.getEncoder().encodeToString(photo.getImage().getData()));
-//        model.addAttribute("title", photo.getTitle());
-//        model.addAttribute("image",
-//                Base64.getEncoder().encodeToString(photo.getImage().getData()));
-//            return Base64.getEncoder().encodeToString(photo.getImage().getData());
+                    
             return ResponseEntity.ok(new BaseResponse(response, "", HttpStatus.OK));
         } catch (Exception e) {
+            logger.error("Lỗi khi lấy ảnh: ", e); // 🚨 Ghi log
             return ResponseEntity.ok(new BaseResponse(null,
                     "Đã xảy ra lỗi khi lấy ảnh. " + e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR));

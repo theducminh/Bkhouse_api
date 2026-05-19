@@ -9,6 +9,7 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.api.bkhouse.entity.ForumPost;
 import com.api.bkhouse.entity.ForumPostLike;
@@ -21,7 +22,6 @@ import com.api.bkhouse.repository.PostCommentRepository;
 import com.api.bkhouse.repository.PostReportRepository;
 import com.api.bkhouse.util.Util;
 
-import javax.transaction.Transactional;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -31,27 +31,37 @@ import java.util.UUID;
 
 @Service
 public class ForumPostService {
-    @Autowired
-    private ForumPostRepository repository;
+    
+    private final ForumPostRepository repository;
+    
+    private final ForumPostLikeRepository forumPostLikeRepository;
 
-    @Autowired
-    private ForumPostLikeRepository forumPostLikeRepository;
+    
+    private final PostCommentRepository postCommentRepository;
 
-    @Autowired
-    private PostCommentRepository postCommentRepository;
+    private final PostReportRepository postReportRepository;
 
-    @Autowired
-    private PostReportRepository postReportRepository;
+    private final NamedParameterJdbcTemplate jdbcTemplate;
 
-    @Autowired
-    private NamedParameterJdbcTemplate jdbcTemplate;
+    public ForumPostService(ForumPostRepository repository, 
+                            ForumPostLikeRepository forumPostLikeRepository, 
+                            PostCommentRepository postCommentRepository, 
+                            PostReportRepository postReportRepository, 
+                            NamedParameterJdbcTemplate jdbcTemplate) {
+        this.repository = repository;
+        this.forumPostLikeRepository = forumPostLikeRepository;
+        this.postCommentRepository = postCommentRepository;
+        this.postReportRepository = postReportRepository;
+        this.jdbcTemplate = jdbcTemplate;
+    }
 
     @Transactional
     public void save(ForumPost forumPost, UUID userId, boolean isUpdate) {
-        if (isUpdate) {
+        if (isUpdate){
             forumPost.setUpdateBy(userId);
             forumPost.setUpdateAt(Util.getCurrentDateTime());
         } else {
+            forumPost.setId(forumPost.getId());
             forumPost.setCreateAt(Util.getCurrentDateTime());
             forumPost.setCreateBy(userId);
         }
@@ -63,11 +73,7 @@ public class ForumPostService {
     }
 
     public ForumPost findById(UUID id) {
-        Optional<ForumPost> forumPost = repository.findByIdAndEnable(id, true);
-        if (forumPost.isEmpty()) {
-            return null;
-        }
-        return forumPost.get();
+        return repository.findByIdAndEnable(id, true).orElse(null);
     }
 
     public Page<ForumPost> findByUser(UUID userId, Integer pageSize, Integer page) {
@@ -116,7 +122,7 @@ public class ForumPostService {
 
     @Transactional
     public void deleteById(UUID postId) {
-        repository.deletePostById(postId);
+        repository.deleteById(postId);
     }
 
     public ChartOption getChart1Data(Integer month, Integer year) {
@@ -127,7 +133,7 @@ public class ForumPostService {
                 String dateStr = year + "-" + month + "-" + i;
                 String query = "select count(*) as cnt\n" +
                         "from forum_post \n" +
-                        "where date(create_at) = :ngay";
+                        "where date(create_at) = cast(:ngay as date)";
                 Map<String, Object> params = new HashMap<>();
                 params.put("ngay", dateStr);
                 SqlParameterSource sqlParameterSource = new MapSqlParameterSource(params);
@@ -140,7 +146,7 @@ public class ForumPostService {
             for (int i = 1; i <= currMonth; i++) {
                 String query = "select count(*) as cnt\n" +
                         "from forum_post \n" +
-                        "where month(create_at) = :month\n" +
+                        "where extract(month from create_at) = :month\n" +
                         "and extract(year from create_at) = :year";
                 Map<String, Object> params = new HashMap<>();
                 params.put("month", i);
@@ -198,20 +204,19 @@ public class ForumPostService {
             query = "select count(*) as cnt\n" +
                     "from forum_post_like fpl\n" +
                     "where extract(year from fpl.create_at) = :year\n" +
-                    "and month(fpl.create_at) = :month";
+                    "and extract(month from fpl.create_at) = :month";
         } else {
             query = "select count(*) as cnt\n" +
                     "from post_report pc inner join forum_post fp on pc.post_id = fp.id\n" +
                     "where extract(year from pc.create_at) = :year\n" +
-                    "and month(pc.create_at) = :month";
+                    "and extract(month from pc.create_at) = :month";
         }
         Map<String, Object> params = new HashMap<>();
         params.put("month", month);
         params.put("year", year);
         SqlParameterSource sqlParameterSource = new MapSqlParameterSource(params);
         Map<String, Object> jdbcResponse = jdbcTemplate.queryForMap(query, sqlParameterSource);
-        Long val = (Long) jdbcResponse.get("cnt");
-        return val;
+        return ((Number) jdbcResponse.get("cnt")).longValue();
     }
 
     private Long chart2CounterFunc2(String date, String mapType) {
@@ -219,21 +224,20 @@ public class ForumPostService {
         if (mapType.equals("COMMENT")) {
             query = "select count(*) as cnt\n" +
                     "from post_comment pc inner join forum_post fp on pc.post_id = fp.id\n" +
-                    "where date(pc.create_at) = :date";
+                    "where extract(date from pc.create_at) = cast(:date as date)";
         } else if (mapType.equals("LIKE")) {
             query = "select count(*) as cnt\n" +
                     "from forum_post_like fpl\n" +
-                    "where date(fpl.create_at) = :date";
+                    "where extract(date from fpl.create_at) = cast(:date as date)";
         } else {
             query = "select count(*) as cnt\n" +
                     "from post_report pc inner join forum_post fp on pc.post_id = fp.id\n" +
-                    "where date(pc.create_at) = :date";
+                    "where extract(date from pc.create_at) = cast(:date as date)";
         }
         Map<String, Object> params = new HashMap<>();
         params.put("date", date);
         SqlParameterSource sqlParameterSource = new MapSqlParameterSource(params);
         Map<String, Object> jdbcResponse = jdbcTemplate.queryForMap(query, sqlParameterSource);
-        Long val = (Long) jdbcResponse.get("cnt");
-        return val;
+        return ((Number) jdbcResponse.get("cnt")).longValue();
     }
 }

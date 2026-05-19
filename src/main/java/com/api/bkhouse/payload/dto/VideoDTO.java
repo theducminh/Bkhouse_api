@@ -8,7 +8,7 @@ import java.io.InputStream;
 
 /**
  *
- * @author dieppv
+ * @author ducnm
  */
 public class VideoDTO {
     private String title;

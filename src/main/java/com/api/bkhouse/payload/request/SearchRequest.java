@@ -13,7 +13,6 @@ public class SearchRequest {
     private String keyword;
     private String provinceCode;
     private String[] districtCode;
-    private String[] wardCode;
     private Double startPrice;
     private Double endPrice;
     private Double startArea;
@@ -23,12 +22,11 @@ public class SearchRequest {
     private String userId;
     private String deviceInfo;
 
-    @NotBlank
+    
     @NotNull
     private Integer limit;
 
     @NotNull
-    @NotBlank
     private Integer offset;
 
     public Boolean getSell() {
@@ -119,13 +117,7 @@ public class SearchRequest {
         this.districtCode = districtCode;
     }
 
-    public String[] getWardCode() {
-        return wardCode;
-    }
-
-    public void setWardCode(String[] wardCode) {
-        this.wardCode = wardCode;
-    }
+   
 
     public Integer[] getNoOfBedrooms() {
         return noOfBedrooms;

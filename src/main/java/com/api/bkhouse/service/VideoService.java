@@ -21,15 +21,18 @@ import java.io.IOException;
 
 /**
  *
- * @author dieppv
+ * @author ducnm
  */
 @Service
 public class VideoService {
-    @Autowired
-    private GridFsTemplate gridFsTemplate;
+    private final GridFsTemplate gridFsTemplate;
 
-    @Autowired
-    private GridFsOperations operations;
+    private final GridFsOperations operations;
+
+    public VideoService(GridFsTemplate gridFsTemplate, GridFsOperations operations) {
+        this.gridFsTemplate = gridFsTemplate;
+        this.operations = operations;
+    }
 
     public String addVideo(String title, MultipartFile file) throws IOException { 
         DBObject metaData = new BasicDBObject(); 
@@ -42,9 +45,24 @@ public class VideoService {
 
     public VideoDTO getVideo(String id) throws IllegalStateException, IOException {
         GridFSFile file = gridFsTemplate.findOne(new Query(Criteria.where("_id").is(id))); 
+        
+        //  CHỐNG SẬP SERVER: Check null nếu video bị xóa hoặc sai ID
+        if (file == null) {
+            return null; 
+        }
+        
         VideoDTO video = new VideoDTO();
-        video.setTitle(file.getMetadata().get("title").toString()); 
+        if (file.getMetadata() != null && file.getMetadata().containsKey("title")) {
+            video.setTitle(file.getMetadata().get("title").toString()); 
+        } else {
+            video.setTitle("Unknown Title");
+        }
+        
         video.setStream(operations.getResource(file).getInputStream());
         return video; 
+    }
+
+    public void deleteVideo(String id) {
+        gridFsTemplate.delete(new Query(Criteria.where("_id").is(id)));
     }
 }

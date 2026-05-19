@@ -11,4 +11,6 @@ public class ClickedUserInfo {
     public void setPostId(UUID postId) {
         this.postId = postId;
     }
+
+
 }

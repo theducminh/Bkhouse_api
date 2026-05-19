@@ -12,16 +12,18 @@ import java.util.UUID;
 
 @Service
 public class SpecialAccountPayService {
-    @Autowired
-    private SpecialAccountPayRepository repository;
+    
+    private final SpecialAccountPayRepository repository;
+
+    public SpecialAccountPayService(SpecialAccountPayRepository repository) {
+        this.repository = repository;
+    }
 
     public List<SpecialAccountPay> getSpecialAccountPaysByUserId(UUID userId) {
         return repository.findByUserIdOrderByCreateAtDesc(userId);
     }
 
     public List<SpecialAccountPay> findAllSpecialAccountPays() {
-        List<SpecialAccountPay> specialAccountPays =
-                repository.findAll(Sort.by(Sort.Direction.DESC, "createAt"));
-        return specialAccountPays;
+        return repository.findAll(Sort.by(Sort.Direction.DESC, "createAt"));
     }
 }

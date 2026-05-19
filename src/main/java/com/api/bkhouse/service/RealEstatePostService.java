@@ -1,12 +1,18 @@
 package com.api.bkhouse.service;
 
+import org.checkerframework.checker.units.qual.A;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Service;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import com.api.bkhouse.constant.enumeric.EType;
 import com.api.bkhouse.entity.*;
@@ -20,54 +26,56 @@ import com.api.bkhouse.payload.response.chart.Series;
 import com.api.bkhouse.repository.*;
 import com.api.bkhouse.util.Util;
 
-import javax.transaction.Transactional;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 public class RealEstatePostService {
-    @Autowired
-    private RealEstatePostRepository repository;
+    private final RealEstatePostRepository repository;
+    private final RealEstatePostPriceRepository realEstatePostPriceRepository;
+    private final InterestedRepository interestedRepository;
+    private final PostMediaRepository postMediaRepository;
+    private final PostViewRepository postViewRepository;
+    private final ClickedInfoViewRepository clickedInfoViewRepository;
+    private final PostCommentRepository postCommentRepository;
+    private final NamedParameterJdbcTemplate jdbcTemplate;
 
-    @Autowired
-    private RealEstatePostPriceRepository realEstatePostPriceRepository;
+    private final AreaPriceBenchmarkRepository areaPriceBenchmarkRepository;
+    private final DistrictRepository districtRepository;
+    
 
-    @Autowired
-    private InterestedRepository interestedRepository;
-
-    @Autowired
-    private PostMediaRepository postMediaRepository;
-
-    @Autowired
-    private PostViewRepository postViewRepository;
-
-    @Autowired
-    private ClickedInfoViewRepository clickedInfoViewRepository;
-
-    @Autowired
-    private PostCommentRepository postCommentRepository;
-
-    @Autowired
-    private NamedParameterJdbcTemplate jdbcTemplate;
-
-    @Autowired
-    private StatisticPriceFluctuationRepository statisticPriceFluctuationRepository;
-
-    @Autowired
-    private DistrictRepository districtRepository;
-
-    @Autowired
-    private WardRepository wardRepository;
+    public RealEstatePostService(RealEstatePostRepository repository,
+                                RealEstatePostPriceRepository realEstatePostPriceRepository,
+                                InterestedRepository interestedRepository,
+                                PostMediaRepository postMediaRepository,
+                                PostViewRepository postViewRepository,
+                                ClickedInfoViewRepository clickedInfoViewRepository,
+                                PostCommentRepository postCommentRepository,
+                                NamedParameterJdbcTemplate jdbcTemplate,
+                                AreaPriceBenchmarkRepository areaPriceBenchmarkRepository,
+                                DistrictRepository districtRepository
+                                ) {
+        this.repository = repository;
+        this.realEstatePostPriceRepository = realEstatePostPriceRepository;
+        this.interestedRepository = interestedRepository;
+        this.postMediaRepository = postMediaRepository;
+        this.postViewRepository = postViewRepository;
+        this.clickedInfoViewRepository = clickedInfoViewRepository;
+        this.postCommentRepository = postCommentRepository;
+        this.jdbcTemplate = jdbcTemplate;
+        this.areaPriceBenchmarkRepository = areaPriceBenchmarkRepository;
+        this.districtRepository = districtRepository;
+    }
 
     private Logger logger = LoggerFactory.getLogger(RealEstatePostService.class);
 
     public RealEstatePost findById(UUID id) {
-        Optional<RealEstatePost> realEstatePost = repository.findById(id);
-        return realEstatePost.get();
+        return repository.findById(id).orElse(null);
     }
 
     public List<RealEstatePost> findByOwnerId(UUID ownerId, Integer page, Integer rows) {
@@ -80,6 +88,27 @@ public class RealEstatePostService {
 
     @Transactional
     public RealEstatePost create(RealEstatePost realEstatePost) {
+       try {
+            Map<String, Object> meta = realEstatePost.getMetadata();
+            if (meta == null) {
+                meta = new HashMap<>(); // Nếu chưa có thì khởi tạo Map mới
+            }
+
+            // Do Entity không lưu Period, ta set mặc định bài viết có hạn 30 ngày
+            // (Nếu muốn chính xác, bác có thể truyền period từ DTO xuống hàm này)
+            int periodDays = 30; 
+            LocalDateTime expiredAt = LocalDateTime.now().plusDays(periodDays);
+            
+            // Format ngày tháng chuẩn ISO-8601 để Postgres hiểu
+            String expiredAtStr = expiredAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            meta.put("expired_at", expiredAtStr);
+            
+            // Set ngược lại vào Entity
+            realEstatePost.setMetadata(meta);
+        } catch (Exception e) {
+            logger.error("Lỗi khi tạo metadata lúc tạo bài: ", e);
+        }
+
         RealEstatePost saved = repository.save(realEstatePost);
         RealEstatePostPrice realEstatePostPrice = new RealEstatePostPrice();
         realEstatePostPrice.setId(null);
@@ -104,6 +133,19 @@ public class RealEstatePostService {
 
     @Transactional
     public RealEstatePost update(RealEstatePost realEstatePost) {
+        try {
+            Map<String, Object> meta = realEstatePost.getMetadata();
+            if (meta == null) {
+                meta = new HashMap<>();
+            }
+
+            // Đánh dấu thời gian bài viết vừa bị update
+            meta.put("last_updated_by_user", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+            
+            realEstatePost.setMetadata(meta);
+        } catch (Exception e) {
+            logger.error("Lỗi cập nhật metadata khi update bài: ", e);
+        }
         return repository.save(realEstatePost);
     }
 
@@ -145,8 +187,6 @@ public class RealEstatePostService {
         PostView postView= new PostView();
         postView.setId(null);
         postView.setRealEstatePostId(realEstatePostId);
-        postView.setCreateBy(UUID.randomUUID());
-        postView.setCreateAt(Util.getCurrentDateTime());
         postViewRepository.save(postView);
     }
 
@@ -162,15 +202,11 @@ public class RealEstatePostService {
     }
 
     public RealEstatePost findByIdAndEnable(UUID id) {
-        Optional<RealEstatePost> realEstatePost = repository.findByIdAndEnabled(id, true);
-        if (realEstatePost.isEmpty()) {
-            return null;
-        }
-        return realEstatePost.get();
+        return repository.findByIdAndEnable(id, true).orElse(null);
     }
 
     public boolean existsByIdAndEnable(UUID id) {
-        return repository.existsByIdAndEnabled(id, true);
+        return repository.existsByIdAndEnable(id, true);
     }
 
     public List<IRepEnableRequest> enableRequestRep(UUID userId) {
@@ -214,115 +250,103 @@ public class RealEstatePostService {
         Optional<IEnableUserChat> optional = repository.findContact(id);
         if (optional.isEmpty()) {
             Optional<IEnableUserChat> ownerOptional = repository.findOwnerContact(id);
-            if (ownerOptional.isEmpty()) {
-                return null;
-            }
-            return ownerOptional.get();
+            return ownerOptional.orElse(null);
         } else {
             return optional.get();
         }
     }
 
     public boolean isInterested(UUID userId, UUID realEstatePostId, String deviceInfo) {
-        if (deviceInfo != null && deviceInfo.length() > 0 && (userId == null || userId.toString().length() == 0)) {
+        if (deviceInfo != null && !deviceInfo.isBlank() && (userId == null || userId.toString().isBlank())) {
             return interestedRepository.existsByDeviceInfoAndRealEstatePostId(deviceInfo, realEstatePostId);
         }
-        return interestedRepository.existsByUserIdAndRealEstatePostId(userId, realEstatePostId);
+
+        // 🌟 TRƯỜNG HỢP 2: Khách vãng lai hoàn toàn không có thông tin gì (An toàn cho hệ thống)
+        if (userId == null) {
+        return false; 
+    }
+
+    // 🌟 TRƯỜNG HỢP 3: Thành viên đã đăng nhập thành công (userId chuẩn UUID)
+    return interestedRepository.existsByUserIdAndRealEstatePostId(userId, realEstatePostId);
     }
 
     public Object countInterested(String userId, String deviceInfo) {
         String query = "select count(*) as cnt\n" +
-                "from interested i inner join real_estate_post rep on i.real_estate_post_id = rep.id\n" +
+                "from interested i inner join real_estate_posts rep on i.real_estate_post_id = rep.id\n" +
                 "where rep.is_enabled = true and i.user_id = :userId ";
         Map<String, Object> params = new HashMap<>();
         if (deviceInfo != null && deviceInfo.length() > 0 && (userId == null || userId.length() == 0)) {
-//            return interestedRepository.countByUserIdAndDeviceInfo("anonymous", deviceInfo);
             query += "and i.device_info = :deviceInfo";
             params.put("deviceInfo", deviceInfo);
-            params.put("userId", "anonymous");
+            params.put("userId", "11111111-1111-1111-111111111111");
         } else {
             params.put("userId", userId);
         }
         Map<String, Object> result = jdbcTemplate.queryForMap(query, new MapSqlParameterSource(params));
-        return result.get("cnt");
+        return ((Number) result.get("cnt")).longValue();
     }
 
     public List<RepDetailPageResponse> detailPageData(Boolean sell, String type, Integer limit, Integer offset, UUID userId, String deviceInfo) {
         List<RepDetailPageResponse> responses = new ArrayList<>();
         List<UUID> repIds = repository.getRepIdDetailPage(sell, type, limit, offset);
         if (repIds.isEmpty()) {
+            logger.info("Không tìm thấy bài viết nào với điều kiện sell = {}, type = {}", sell, type);  
             return responses;
         }
-        repIds
-                .stream()
-                .forEach(e -> {
-                    RepDetailPageResponse response = new RepDetailPageResponse();
-                    Optional<RealEstatePost> realEstatePostOptional = repository.findById(e);
-                    if (!realEstatePostOptional.isEmpty()) {
-                        RealEstatePost realEstatePost = realEstatePostOptional.get();
-                        response.setArea(realEstatePost.getArea());
-                        response.setAddressShow(realEstatePost.getAddressShow());
-                        response.setDescription(realEstatePost.getDescription());
-                        response.setDirection(realEstatePost.getDirection());
-                        response.setTitle(realEstatePost.getTitle());
-                        response.setPrice(realEstatePost.getPrice());
-                        response.setCreateAt(realEstatePost.getCreatedAt());
-                        response.setAvatarUrl(realEstatePost.getOwnerId().getAvatarUrl());
-                        response.setFullName(realEstatePost.getOwnerId().getFirstName() + " "
-                                + realEstatePost.getOwnerId().getMiddleName() + " "
-                                + realEstatePost.getOwnerId().getLastName()
-                        );
-                        response.setPhoneNumber(realEstatePost.getOwnerId().getPhoneNumber());
-                        List<PostMedia> postMedias = postMediaRepository.findByPostId(e);
-                        if (!postMedias.isEmpty()) {
-                            response.setImageUrl(postMedias.get(0).getMediaUrl());
-                        }
-                        response.setInterested(isInterested(userId, e, deviceInfo));
-                        responses.add(response);
-                    }
-                });
+
+        List<RealEstatePost> posts = repository.findAllById(repIds);
+        Map<UUID, RealEstatePost> postMap = posts.stream()
+                .collect(Collectors.toMap(RealEstatePost::getId, p -> p));
+
+        List<PostMedia> allMedias = postMediaRepository.findByPostIdIn(repIds);
+        Map<UUID, List<PostMedia>> mediaMap = allMedias.stream()
+                .collect(Collectors.groupingBy(PostMedia::getPostId));
+
+        for (UUID id : repIds) {
+            RealEstatePost realEstatePost = postMap.get(id);
+            if (realEstatePost != null) {
+                RepDetailPageResponse response = new RepDetailPageResponse();
+                response.setId(id.toString());
+                response.setArea(realEstatePost.getArea());
+                response.setAddressShow(realEstatePost.getAddressShow());
+                response.setDescription(realEstatePost.getDescription());
+                response.setDirection(realEstatePost.getDirection());
+                response.setTitle(realEstatePost.getTitle());
+                response.setPrice(realEstatePost.getPrice());
+                response.setCreateAt(realEstatePost.getCreatedAt());
+                response.setEnable(realEstatePost.getEnable());
+
+                if (realEstatePost.getOwnerId() != null) {
+                    String middleName = realEstatePost.getOwnerId().getMiddleName() != null 
+                                        ? realEstatePost.getOwnerId().getMiddleName() + " " : "";
+                    response.setFullName(realEstatePost.getOwnerId().getFirstName() + " "
+                            + middleName
+                            + realEstatePost.getOwnerId().getLastName()
+                    );
+                    response.setAvatarUrl(realEstatePost.getOwnerId().getAvatarUrl());
+                    response.setPhoneNumber(realEstatePost.getOwnerId().getPhoneNumber());
+                }
+
+                // Lấy ảnh ra từ Map đã gom
+                List<PostMedia> postMedias = mediaMap.getOrDefault(id, new ArrayList<>());
+                if (!postMedias.isEmpty()) {
+                    response.setImageUrl(postMedias.get(0).getId().toString());
+                }
+
+                // Call này bác có thể tối ưu gom mẻ sau nếu rảnh, hiện tại 1 query này là đủ nhanh
+                response.setInterested(isInterested(userId, id, deviceInfo)); 
+                
+                responses.add(response);
+            }
+        }
         return responses;
     }
 
     public Object findByMostInterested() {
-//        List<RepClientResponse> responses = new ArrayList<>();
-//        List<IRepClient> repClients = repository.getLstMostInterested();
-//        repClients
-//                .stream()
-//                .forEach(e -> {
-//                    Optional<String> imageUrlOptional = postMediaRepository.getOneImageOfPost(e.getId());
-//                    RepClientResponse response = new RepClientResponse(e.getId(),
-//                            e.getTitle(),
-//                            e.getPrice(),
-//                            e.getArea(),
-//                            e.getSell(),
-//                            e.getAddressShow(),
-//                            e.getCreateAt(),
-//                            imageUrlOptional.isEmpty() ? "" : imageUrlOptional.get());
-//                    responses.add(response);
-//                });
-//        return responses;
         return repository.getLstMostInterested();
     }
 
     public Object findByMostView() {
-//        List<RepClientResponse> responses = new ArrayList<>();
-//        List<IRepClient> repClients = repository.getLstMostView();
-//        repClients
-//                .stream()
-//                .forEach(e -> {
-//                    Optional<String> imageUrlOptional = postMediaRepository.getOneImageOfPost(e.getId());
-//                    RepClientResponse response = new RepClientResponse(e.getId(),
-//                            e.getTitle(),
-//                            e.getPrice(),
-//                            e.getArea(),
-//                            e.getSell(),
-//                            e.getAddressShow(),
-//                            e.getCreateAt(),
-//                            imageUrlOptional.isEmpty() ? "" : imageUrlOptional.get());
-//                    responses.add(response);
-//                });
-//        return responses;
         return repository.getLstMostView();
     }
 
@@ -342,17 +366,18 @@ public class RealEstatePostService {
     }
 
     public Object search(SearchRequest request) {
-        String query = "select rep.id, rep.title, rep.address_show as addressShow, " +
-                "rep.price, rep.area, rep.is_sell as sell, rep.create_at as createAt, rep.description, " +
-                "concat(u.first_name, ' ', u.middle_name, ' ', u.last_name) as fullName, " +
+        String query = "select cast(rep.id as varchar) as id, rep.title, rep.address_show as addressShow, " +
+                "rep.price, rep.area, rep.is_sell as sell, rep.created_at as createAt, rep.description, " +
+                "concatws(' ', u.first_name, u.middle_name, u.last_name) as fullName, " +
                 "u.phone_number as phoneNumber, u.avatar_url as avatarUrl, ";
         if (request.getDeviceInfo() != null && request.getDeviceInfo().length() > 0) {
             query += "(select count(*) > 0 from interested where user_id = :userId and device_info = :deviceInfo and real_estate_post_id = rep.id ) as interested, ";
         } else {
             query += "(select count(*) > 0 from interested where user_id = :userId and real_estate_post_id = rep.id ) as interested, ";
         }
-        query += "(select id from post_media where post_id = rep.id limit 1) as imageUrl\n" +
-                "from real_estate_post rep inner join user u on u.id = rep.owner_id ";
+        query += "(SELECT id FROM post_media WHERE post_id = rep.id LIMIT 1) as imageUrl\n" +
+                "FROM real_estate_posts rep INNER JOIN users u ON u.id = rep.owner_id ";
+
         if (request.getType() != null) {
             if (request.getType().equals(EType.APARTMENT.toString())) {
                 query += "inner join apartment spc on spc.real_estate_post_id = rep.id ";
@@ -360,67 +385,49 @@ public class RealEstatePostService {
                 query += "inner join house spc on spc.real_estate_post_id = rep.id ";
             }
         }
-        query += "where u.enable = 1 " +
-                "and rep.enable = 1 " +
-                "and rep.status = 'DA_KIEM_DUYET' " +
-                "and datediff(now(), rep.create_at) <= rep.period ";
+        query += "where u.is_enabled = true " +
+                "and rep.is_enabled = true " +
+                "and rep.status = 'APPROVED' " +
+                "AND (DATE(NOW()) - DATE(rep.created_at)) <= rep.period ";
         if (request.getSell() != null) {
             if (request.getSell()) {
-                query += "and rep.is_sell = 1 ";
+                query += "and rep.is_sell = true";
             } else {
-                query += "and rep.is_sell = 0 ";
+                query += "and rep.is_sell = false"; 
             }
         }
         if (request.getType() != null) {
-            query += "and rep.type = '" + request.getType().replaceAll("\\s+", "") + "' ";
+            query += "AND rep.type = '" + request.getType().replaceAll("\\s+", "") + "' ";
             if (!request.getType().equals(EType.PLOT.toString()) && request.getNoOfBedrooms() != null && request.getNoOfBedrooms().length > 0) {
                 int index = 0;
-                for (Integer noOfBedroom: request.getNoOfBedrooms()) {
+                for (Integer noOfBedroom : request.getNoOfBedrooms()) {
                     if (index == 0) {
-                        if (noOfBedroom > 5) {
-                            query += "and ( spc.no_bedroom >= " + noOfBedroom + " ";
-                        } else {
-                            query += "and ( spc.no_bedroom = " + noOfBedroom + " ";
-                        }
+                        query += noOfBedroom > 5 ? "AND ( spc.no_bedroom >= " + noOfBedroom + " " : "AND ( spc.no_bedroom = " + noOfBedroom + " ";
                     } else {
-                        if (noOfBedroom > 5) {
-                            query += "or spc.no_bedroom >= " + noOfBedroom + " ";
-                        } else {
-                            query += "or spc.no_bedroom = " + noOfBedroom + " ";
-                        }
+                        query += noOfBedroom > 5 ? "OR spc.no_bedroom >= " + noOfBedroom + " " : "OR spc.no_bedroom = " + noOfBedroom + " ";
                     }
-                    index ++;
+                    index++;
                 }
                 query += " ) ";
             }
         }
+
         if (request.getProvinceCode() != null) {
             query += "and rep.province_code = '" + request.getProvinceCode().replaceAll("\\s+", "") + "' ";
         }
         if (request.getDistrictCode() != null && request.getDistrictCode().length > 0) {
             int index = 0;
-            for (String districtCode: request.getDistrictCode()) {
+            for (String districtCode : request.getDistrictCode()) {
                 if (index == 0) {
-                    query += "and ( rep.district_code = '" + districtCode.replaceAll("\\s+", "") + "' ";
+                    query += "AND ( rep.district_code = '" + districtCode.replaceAll("\\s+", "") + "' ";
                 } else {
-                    query += "or rep.district_code = '" + districtCode.replaceAll("\\s+", "") + "' ";
+                    query += "OR rep.district_code = '" + districtCode.replaceAll("\\s+", "") + "' ";
                 }
-                index ++;
+                index++;
             }
             query += " ) ";
         }
-        if (request.getWardCode() != null && request.getWardCode().length > 0) {
-            int index = 0;
-            for (String wardCode: request.getWardCode()) {
-                if (index == 0) {
-                    query += "and ( rep.ward_code = '" + wardCode.replaceAll("\\s+", "") + "' ";
-                } else {
-                    query += "or rep.ward_code = '" + wardCode.replaceAll("\\s+", "") + "' ";
-                }
-                index ++;
-            }
-            query += " ) ";
-        }
+        
         if (request.getStartPrice() != null) {
             if (request.getEndPrice() != null) {
                 query += "and rep.price >= " + request.getStartPrice() + " and rep.price <= " + request.getEndPrice() + " ";
@@ -481,450 +488,337 @@ public class RealEstatePostService {
         params.put("offset", request.getOffset());
         SqlParameterSource sqlParameterSource = new MapSqlParameterSource(params);
 
-        List<Map<String, Object>> response = jdbcTemplate.queryForList(query, sqlParameterSource);
-        return response;
+       return jdbcTemplate.queryForList(query, sqlParameterSource);
     }
 
     @Transactional
     public void calculatePricePerAreaUnit(String ngay) {
-//        List<String> provinceCodes = statisticPriceFluctuationRepository.getAllProvinceCodes();
         String HaNoiCode = "01";
         List<District> districtCodes = districtRepository.findByProvinceCode(HaNoiCode);
-        districtCodes
-                .stream()
-                .parallel()
-                .forEach(e -> {
-                    List<Ward> wardCodes = wardRepository.findByDistrictCode(e.getCode());
-                    wardCodes
-                            .stream()
-                            .parallel()
-                                    .forEach(ee -> {
-                                        StatisticPriceFluctuation sellHouse = getStatisticPriceFluctuation(true, EType.HOUSE, HaNoiCode, e.getCode(), ee.getCode(), ngay);
-                                        StatisticPriceFluctuation sellApartment = getStatisticPriceFluctuation(true, EType.APARTMENT, HaNoiCode, e.getCode(), ee.getCode(), ngay);
-                                        StatisticPriceFluctuation sellPlot = getStatisticPriceFluctuation(true, EType.PLOT, HaNoiCode, e.getCode(), ee.getCode(), ngay);
-                                        StatisticPriceFluctuation hireHouse = getStatisticPriceFluctuation(false, EType.HOUSE, HaNoiCode, e.getCode(), ee.getCode(), ngay);
-                                        StatisticPriceFluctuation hireApartment = getStatisticPriceFluctuation(false, EType.APARTMENT, HaNoiCode, e.getCode(), ee.getCode(), ngay);
-                                        if (sellHouse != null) {
-                                            statisticPriceFluctuationRepository.save(sellHouse);
-                                        }
-                                        if (sellApartment != null) {
-                                            statisticPriceFluctuationRepository.save(sellApartment);
-                                        }
-                                        if (sellPlot != null) {
-                                            statisticPriceFluctuationRepository.save(sellPlot);
-                                        }
-                                        if (hireHouse != null) {
-                                            statisticPriceFluctuationRepository.save(hireHouse);
-                                        }
-                                        if (hireApartment != null) {
-                                            statisticPriceFluctuationRepository.save(hireApartment);
-                                        }
-                                    });
-                });
+        
+        districtCodes.stream().parallel().forEach(e -> {
+                
+                // 🚨 Tạm thời chỉ chạy benchmark cho BÁN (sell = true) vì Entity chưa có cột phân biệt Thuê/Bán
+                AreaPriceBenchmark sellHouse = getAreaPriceBenchmark(true, EType.HOUSE, HaNoiCode, e.getCode(), ngay);
+                AreaPriceBenchmark sellApartment = getAreaPriceBenchmark(true, EType.APARTMENT, HaNoiCode, e.getCode(), ngay);
+                AreaPriceBenchmark sellPlot = getAreaPriceBenchmark(true, EType.PLOT, HaNoiCode, e.getCode(), ngay);
+                
+                if (sellHouse != null) areaPriceBenchmarkRepository.save(sellHouse);
+                if (sellApartment != null) areaPriceBenchmarkRepository.save(sellApartment);
+                if (sellPlot != null) areaPriceBenchmarkRepository.save(sellPlot);
+            });
     }
 
-    private StatisticPriceFluctuation getStatisticPriceFluctuation(boolean sell, EType type, String provinceCode, String districtCode, String wardCode, String ngay) {
-        String query = "select avg(price/area) as result from real_estate_post \n" +
-                "where enable = 1 \n" +
-                "and (status = 'DA_KIEM_DUYET' or status = 'DA_HOAN_THANH') \n" +
-                "and datediff(now(), create_at) <= period\n" +
-                "and is_sell = :sell\n" +
-                "and type = :type\n" +
-                "and district_code = :districtCode\n" +
-                "and province_code = :provinceCode\n" +
-                "and ward_code = :wardCode\n" +
-                "and (date(create_at) = :ngay " +
-                "or date(update_at) = :ngay)";
+    private AreaPriceBenchmark getAreaPriceBenchmark(boolean sell, EType type, String provinceCode, String districtCode, String ngay) {
+        // 🚨 Đã bổ sung tính toán MIN, MAX và COUNT để khớp với Entity
+        String query = "SELECT " +
+                "AVG(price / NULLIF(area, 0)) as avg_price, " +
+                "MIN(price / NULLIF(area, 0)) as min_price, " +
+                "MAX(price / NULLIF(area, 0)) as max_price, " +
+                "COUNT(id) as sample_count " +
+                "FROM real_estate_posts \n" +
+                "WHERE is_enabled = true \n" +
+                "AND status IN ('APPROVED', 'DA_HOAN_THANH') \n" +
+                "AND (DATE(NOW()) - DATE(created_at)) <= period\n" +
+                "AND real-estate-post/detailPageData? = :sell\n" +
+                "AND type = :type\n" +
+                "AND district_code = :districtCode\n" +
+                "AND province_code = :provinceCode\n" +
+                "AND (DATE(created_at) = CAST(:ngay AS DATE) OR DATE(updated_at) = CAST(:ngay AS DATE))";
+        
         Map<String, Object> params = new HashMap<>();
-        params.put("sell", sell ? 1 : 0);
+        params.put("sell", sell);
         params.put("type", type.toString());
         params.put("districtCode", districtCode);
         params.put("provinceCode", provinceCode);
-        params.put("wardCode", wardCode);
         params.put("ngay", ngay);
+        
         SqlParameterSource sqlParameterSource = new MapSqlParameterSource(params);
         Map<String, Object> response = jdbcTemplate.queryForMap(query, sqlParameterSource);
-        if (response.get("result") == null) {
+        
+        // Nếu không có bài viết nào (sample_count = 0 thì avg_price sẽ bị null)
+        if (response.get("avg_price") == null) {
             return null;
         } else {
-            StatisticPriceFluctuation statisticPriceFluctuation = new StatisticPriceFluctuation();
-            statisticPriceFluctuation.setId(null);
-            statisticPriceFluctuation.setSell(sell);
-            statisticPriceFluctuation.setType(type);
+            AreaPriceBenchmark areaPriceBenchmark = new AreaPriceBenchmark();
+            areaPriceBenchmark.setId(null);
+            
+            // Map mã hành chính và loại
+            areaPriceBenchmark.setProvinceCode(provinceCode);
+            areaPriceBenchmark.setDistrictCode(districtCode);
+            areaPriceBenchmark.setPropertyType(type); // 🚨 Chuẩn tên propertyType
+            
+            // Map các chỉ số (Ép qua Number chống ClassCastException)
+            areaPriceBenchmark.setAvgPricePerM2(((Number) response.get("avg_price")).doubleValue());
+            areaPriceBenchmark.setMinPrice(((Number) response.get("min_price")).doubleValue());
+            areaPriceBenchmark.setMaxPrice(((Number) response.get("max_price")).doubleValue());
+            areaPriceBenchmark.setSampleCount(((Number) response.get("sample_count")).intValue());
+            
+            // 🚨 Xử lý ngày tháng: Chuyển chuỗi YYYY-MM-DD sang Instant
             try {
-                statisticPriceFluctuation.setCreateAt(new SimpleDateFormat("yyyy-MM-dd").parse(ngay));
-            } catch (ParseException e) {
+                java.time.LocalDate localDate = java.time.LocalDate.parse(ngay);
+                java.time.Instant instant = localDate.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+                areaPriceBenchmark.setUpdatedAt(instant);
+            } catch (Exception e) {
                 e.printStackTrace();
-                statisticPriceFluctuation.setCreateAt(new Date());
+                areaPriceBenchmark.setUpdatedAt(java.time.Instant.now());
             }
-            statisticPriceFluctuation.setDistrictCode(districtCode);
-            statisticPriceFluctuation.setProvinceCode(provinceCode);
-            statisticPriceFluctuation.setWardCode(wardCode);
-            statisticPriceFluctuation.setPrice((Double) response.get("result"));
-            return statisticPriceFluctuation;
+            
+            return areaPriceBenchmark;
         }
-//        statisticPriceFluctuation.setPrice(repository.calculatePricePerAreaUnit(sell ? 1 : 0, type.toString(), districtCode, provinceCode, wardCode));
     }
 
     public ChartOption baiVietChart1(Byte sell, String type, String provinceCode, Integer year) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(new Date());
-        int currMonth;
-        if (calendar.get(Calendar.YEAR) == year) {
-            currMonth = calendar.get(Calendar.MONTH);
-            currMonth++;
-        } else {
-            currMonth = 12;
-        }
+        int currMonth = (calendar.get(Calendar.YEAR) == year) ? calendar.get(Calendar.MONTH) + 1 : 12;
+        
         ChartOption chartOption = new ChartOption();
         List<District> districts = districtRepository.findByProvinceCode(provinceCode);
-        int finalCurrMonth = currMonth;
-        districts
-                .stream()
-                .parallel()
-                .forEach(e -> {
-                    Series series = new Series();
-                    series.setName(e.getName());
-                    List<Long> data = new ArrayList<>();
-                    for (int i = 1; i <= finalCurrMonth; i++) {
-                        String query = "select count(*) as cnt from real_estate_post \n" +
-                                "where is_sell = :sell\n" +
-                                "and type = :type\n" +
-                                "and district_code = :districtCode\n" +
-                                "and province_code = :provinceCode\n" +
-                                "and extract(month from create_at) = :month\n" +
-                                "and extract(year from create_at) = :year";
-                        Map<String, Object> params = new HashMap<>();
-                        params.put("sell", sell);
-                        params.put("type", type);
-                        params.put("districtCode", e.getCode());
-                        params.put("provinceCode", provinceCode);
-                        params.put("month", i);
-                        params.put("year", year);
-                        SqlParameterSource sqlParameterSource = new MapSqlParameterSource(params);
-                        Map<String, Object> jdbcResponse = jdbcTemplate.queryForMap(query, sqlParameterSource);
-                        Long val = (Long) jdbcResponse.get("cnt");
-                        data.add(val);
-                    }
-                    series.setData(new ArrayList<Object>(data));
-                    chartOption.getSeries().add(series);
-                });
-        List<Integer> xaxis = new ArrayList<>();
-        for (int i = 1; i <= finalCurrMonth; i++) {
-            xaxis.add(i);
-        }
-        chartOption.setXaxis(new ArrayList<>(xaxis));
+        
+        districts.stream().parallel().forEach(e -> {
+            Series series = new Series();
+            series.setName(e.getName());
+            List<Long> data = new ArrayList<>();
+            for (int i = 1; i <= currMonth; i++) {
+                // 🚨 Sửa hàm extract month/year
+                String query = "SELECT COUNT(*) as cnt FROM real_estate_posts \n" +
+                        "WHERE is_sell = :sell\n" +
+                        "AND type = :type\n" +
+                        "AND district_code = :districtCode\n" +
+                        "AND province_code = :provinceCode\n" +
+                        "AND EXTRACT(MONTH FROM created_at) = :month\n" +
+                        "AND EXTRACT(YEAR FROM created_at) = :year";
+                Map<String, Object> params = new HashMap<>();
+                params.put("sell", sell != null && sell == 1);
+                params.put("type", type);
+                params.put("districtCode", e.getCode());
+                params.put("provinceCode", provinceCode);
+                params.put("month", i);
+                params.put("year", year);
+                
+                SqlParameterSource sqlParameterSource = new MapSqlParameterSource(params);
+                Map<String, Object> jdbcResponse = jdbcTemplate.queryForMap(query, sqlParameterSource);
+                data.add(((Number) jdbcResponse.get("cnt")).longValue());
+            }
+            series.setData(new ArrayList<>(data));
+            chartOption.getSeries().add(series);
+        });
+        
+        List<Object> xaxis = new ArrayList<>();
+        for (int i = 1; i <= currMonth; i++) xaxis.add(i);
+        chartOption.setXaxis(xaxis);
         return chartOption;
     }
 
     public ChartOption baiVietChart2(Byte sell, String type, String provinceCode, Integer year) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(new Date());
-        int currMonth;
-        if (calendar.get(Calendar.YEAR) == year) {
-            currMonth = calendar.get(Calendar.MONTH);
-            currMonth++;
-        } else {
-            currMonth = 12;
-        }
+        int currMonth = (calendar.get(Calendar.YEAR) == year) ? calendar.get(Calendar.MONTH) + 1 : 12;
+        
         ChartOption chartOption = new ChartOption();
         Map<String, String> typeMap = new HashMap<>();
         typeMap.put("VIEW", "Số lượt xem");
         typeMap.put("INTEREST", "Quan tâm");
         typeMap.put("COMMENT", "Bình luận");
         typeMap.put("REPORT", "Báo cáo");
-        int finalCurrMonth = currMonth;
-        for (Map.Entry<String, String> iterator: typeMap.entrySet()) {
+        
+        for (Map.Entry<String, String> iterator : typeMap.entrySet()) {
             Series series = new Series();
             List<Long> data = new ArrayList<>();
-            for (int i = 1; i <= finalCurrMonth; i++) {
-                Long val = chart2Counter(sell, type, provinceCode, i, year, iterator.getKey());
-                data.add(val);
+            for (int i = 1; i <= currMonth; i++) {
+                data.add(chart2Counter(sell, type, provinceCode, i, year, iterator.getKey()));
             }
             series.setName(iterator.getValue());
-            series.setData(new ArrayList<Object>(data));
+            series.setData(new ArrayList<>(data));
             chartOption.getSeries().add(series);
         }
-        List<Integer> xaxis = new ArrayList<>();
-        for (int i = 1; i <= finalCurrMonth; i++) {
-            xaxis.add(i);
-        }
-        chartOption.setXaxis(new ArrayList<>(xaxis));
+        
+        List<Object> xaxis = new ArrayList<>();
+        for (int i = 1; i <= currMonth; i++) xaxis.add(i);
+        chartOption.setXaxis(xaxis);
         return chartOption;
     }
 
     private Long chart2Counter(Byte sell, String type, String provinceCode, Integer month, Integer year, String mapType) {
         String query;
+        // 🚨 Sửa các hàm YEAR() và MONTH() thành EXTRACT
         if (mapType.equals("VIEW")) {
-            query = "select count(*) as cnt\n" +
-                    "from post_view pv inner join real_estate_post rep on pv.real_estate_post_id = rep.id\n" +
-                    "and rep.is_sell = :sell\n" +
-                    "and rep.type = :type\n" +
-                    "and rep.province_code = :provinceCode\n" +
-                    "and year(pv.create_at) = :year\n" +
-                    "and month(pv.create_at) = :month";
+            query = "SELECT COUNT(*) as cnt FROM post_view pv INNER JOIN real_estate_posts rep ON pv.real_estate_post_id = rep.id " +
+                    "WHERE rep.is_sell = :sell AND rep.type = :type AND rep.province_code = :provinceCode " +
+                    "AND EXTRACT(YEAR FROM pv.create_at) = :year AND EXTRACT(MONTH FROM pv.create_at) = :month";
         } else if (mapType.equals("COMMENT")) {
-            query = "select count(*) as cnt\n" +
-                    "from post_comment pv inner join real_estate_post rep on pv.post_id = rep.id\n" +
-                    "and rep.is_sell = :sell\n" +
-                    "and rep.type = :type\n" +
-                    "and rep.province_code = :provinceCode\n" +
-                    "and year(pv.create_at) = :year\n" +
-                    "and month(pv.create_at) = :month";
+            query = "SELECT COUNT(*) as cnt FROM post_comment pv INNER JOIN real_estate_posts rep ON pv.post_id = rep.id " +
+                    "WHERE rep.is_sell = :sell AND rep.type = :type AND rep.province_code = :provinceCode " +
+                    "AND EXTRACT(YEAR FROM pv.create_at) = :year AND EXTRACT(MONTH FROM pv.create_at) = :month";
         } else if (mapType.equals("INTEREST")) {
-            query = "select count(*) as cnt\n" +
-                    "from interested pv inner join real_estate_post rep on pv.real_estate_post_id = rep.id\n" +
-                    "and rep.is_sell = :sell\n" +
-                    "and rep.type = :type\n" +
-                    "and rep.province_code = :provinceCode\n" +
-                    "and year(pv.create_at) = :year\n" +
-                    "and month(pv.create_at) = :month";
+            query = "SELECT COUNT(*) as cnt FROM interested pv INNER JOIN real_estate_posts rep ON pv.real_estate_post_id = rep.id " +
+                    "WHERE rep.is_sell = :sell AND rep.type = :type AND rep.province_code = :provinceCode " +
+                    "AND EXTRACT(YEAR FROM pv.create_at) = :year AND EXTRACT(MONTH FROM pv.create_at) = :month";
         } else {
-            query = "select count(*) as cnt\n" +
-                    "from post_report pv inner join real_estate_post rep on pv.post_id = rep.id\n" +
-                    "and rep.is_sell = :sell\n" +
-                    "and rep.type = :type\n" +
-                    "and rep.province_code = :provinceCode\n" +
-                    "and year(pv.create_at) = :year\n" +
-                    "and month(pv.create_at) = :month";
+            query = "SELECT COUNT(*) as cnt FROM post_report pv INNER JOIN real_estate_posts rep ON pv.post_id = rep.id " +
+                    "WHERE rep.is_sell = :sell AND rep.type = :type AND rep.province_code = :provinceCode " +
+                    "AND EXTRACT(YEAR FROM pv.create_at) = :year AND EXTRACT(MONTH FROM pv.create_at) = :month";
         }
+        
         Map<String, Object> params = new HashMap<>();
-        params.put("sell", sell);
+        params.put("sell", sell != null && sell == 1);
         params.put("type", type);
         params.put("provinceCode", provinceCode);
         params.put("month", month);
         params.put("year", year);
+        
         SqlParameterSource sqlParameterSource = new MapSqlParameterSource(params);
         Map<String, Object> jdbcResponse = jdbcTemplate.queryForMap(query, sqlParameterSource);
-        Long val = (Long) jdbcResponse.get("cnt");
-        return val;
+        return ((Number) jdbcResponse.get("cnt")).longValue();
     }
 
-    public ChartOption getPriceFluctuationStatistic(Byte sell, String type, String provinceCode, String districtCode, String wardCode, Integer month, Integer year) {
-        ChartOption chartOption = new ChartOption();
-        String query = "select avg(price) as result " +
-                "from statistic_price_fluctuation\n" +
-                "where sell = :sell \n" +
-                "and type = :type \n" +
-                "and province_code = :provinceCode \n";
-        int val;
-        Map<String, Object> params = new HashMap<>();
+    public ChartOption getPriceFluctuationStatistic(Boolean isSell, String type, String provinceCode, String districtCode, Integer month, Integer year) {
+    ChartOption chartOption = new ChartOption();
+    
+    // 1. Chuẩn bị mốc trục X (X-axis)
+    int daysInMonth = (month != null && month > 0) ? Util.getDayOfMonth(month, year) : Util.getCurrMonth(year);
+    for (int i = 1; i <= daysInMonth; i++) {
+        chartOption.getXaxis().add(i);
+    }
 
-        params.put("sell", sell);
-        params.put("type", type);
-        params.put("provinceCode", provinceCode);
+    // 2. Viết câu SQL GROUP BY gộp để xử lý mọi thứ dưới Database
+    // Trích xuất ngày hoặc tháng tùy theo param month
+    String timeExtractSql = (month != null && month > 0) 
+            ? "EXTRACT(DAY FROM create_at) AS time_val " 
+            : "EXTRACT(MONTH FROM create_at) AS time_val ";
 
-        if (month != 0) {
-            val = Util.getDayOfMonth(month, year);
-        } else {
-            val = Util.getCurrMonth(year);
-        }
-        for (int i = 1; i <= val; i++) {
-            chartOption.getXaxis().add(i);
-        }
+    StringBuilder query = new StringBuilder(
+        "SELECT district_code, " + timeExtractSql + ", AVG(price) as avg_price " +
+        "FROM statistic_price_fluctuation " +
+        "WHERE sell = :sell AND type = :type AND province_code = :provinceCode "
+    );
 
-        if (districtCode != null && districtCode.length() > 0) {
-            query += "and district_code = :districtCode ";
-            params.put("districtCode", districtCode);
-            if (wardCode != null && wardCode.length() > 0) {
-                query += "and ward_code = :wardCode ";
-                params.put("wardCode", wardCode);
-                String finalQuery = query;
-                if (month != 0) {
-                    Series series = new Series();
-                    series.setName(wardCode);
-                    for (int i = 1; i <= val; i++) {
-                        String date = year + "-" + month + "-" + i;
-                        String sql = finalQuery + "and date(create_at) = :date ";
-                        params.put("date", date);
-                        Map<String, Object> jdbcResponse = jdbcTemplate.queryForMap(sql, new MapSqlParameterSource(params));
-                        series.getData().add(jdbcResponse.get("result"));
-                    }
-                    chartOption.getSeries().add(series);
-                } else {
-                    Series series = new Series();
-                    series.setName(wardCode);
-                    for (int i = 1; i <= val; i++) {
-                        String sql = finalQuery + "and extract(year from create_at) = :year " +
-                                "and extract(month from create_at) = :month ";
-                        params.put("month", i);
-                        params.put("year", year);
-                        Map<String, Object> jdbcResponse = jdbcTemplate.queryForMap(sql, new MapSqlParameterSource(params));
-                        series.getData().add(jdbcResponse.get("result"));
-                    }
-                    chartOption.getSeries().add(series);
-                }
-            } else {
-                List<Ward> wards = wardRepository.findByDistrictCode(districtCode);
-                String finalQuery = query;
-                if (month != 0) {
-                    wards
-                            .stream()
-                            .parallel()
-                            .forEach(e -> {
-                                Series series = new Series();
-                                series.setName(e.getName());
-                                for (int i = 1; i <= val; i++) {
-                                    String date = year + "-" + month + "-" + i;
-                                    String sql = finalQuery + "and date(create_at) = :date " +
-                                            "and ward_code = :wardCode ";
-                                    params.put("date", date);
-                                    params.put("wardCode", e.getCode());
-                                    Map<String, Object> jdbcResponse = jdbcTemplate.queryForMap(sql, new MapSqlParameterSource(params));
-                                    series.getData().add(jdbcResponse.get("result"));
-                                }
-                                chartOption.getSeries().add(series);
-                            });
-                } else {
-                    wards
-                            .stream()
-                            .parallel()
-                            .forEach(e -> {
-                                Series series = new Series();
-                                series.setName(e.getName());
-                                for (int i = 1; i <= val; i++) {
-                                    String sql = finalQuery + "and extract(year from create_at) = :year " +
-                                            "and extract(month from create_at) = :month " +
-                                            "and ward_code = :wardCode ";
-                                    params.put("month", i);
-                                    params.put("year", year);
-                                    params.put("wardCode", e.getCode());
-                                    Map<String, Object> jdbcResponse = jdbcTemplate.queryForMap(sql, new MapSqlParameterSource(params));
-                                    series.getData().add(jdbcResponse.get("result"));
-                                }
-                                chartOption.getSeries().add(series);
-                            });
-                }
-            }
-        } else {
-            if (wardCode != null && wardCode.length() > 0) {
-                return null;
-            } else {
-                List<District> districts = districtRepository.findByProvinceCode(provinceCode);
-                String finalQuery = query;
-                if (month != 0) {
-                    districts
-                            .stream()
-                            .parallel()
-                            .forEach(e -> {
-                                Series series = new Series();
-                                series.setName(e.getName());
-                                for (int i = 1; i <= val; i++) {
-                                    String date = year + "-" + month + "-" + i;
-                                    String sql = finalQuery + "and date(create_at) = :date " +
-                                            "and district_code = :districtCode ";
-                                    params.put("date", date);
-                                    params.put("districtCode", e.getCode());
-                                    Map<String, Object> jdbcResponse = jdbcTemplate.queryForMap(sql, new MapSqlParameterSource(params));
-                                    series.getData().add(jdbcResponse.get("result"));
-                                }
-                                chartOption.getSeries().add(series);
-                            });
-                } else {
-                    districts
-                            .stream()
-                            .parallel()
-                            .forEach(e -> {
-                                Series series = new Series();
-                                series.setName(e.getName());
-                                for (int i = 1; i <= val; i++) {
-                                    String sql = finalQuery + "and extract(year from create_at) = :year " +
-                                            "and extract(month from create_at) = :month " +
-                                            "and district_code = :districtCode ";
-                                    params.put("month", i);
-                                    params.put("year", year);
-                                    params.put("districtCode", e.getCode());
-                                    Map<String, Object> jdbcResponse = jdbcTemplate.queryForMap(sql, new MapSqlParameterSource(params));
-                                    series.getData().add(jdbcResponse.get("result"));
-                                }
-                                chartOption.getSeries().add(series);
-                            });
+    Map<String, Object> params = new HashMap<>();
+    params.put("sell", isSell != null && isSell); // Chuyển Byte cũ sang Boolean cho chuẩn
+    params.put("type", type);
+    params.put("provinceCode", provinceCode);
+
+    // Lọc theo Năm và Tháng (nếu có)
+    query.append("AND EXTRACT(YEAR FROM create_at) = :year ");
+    params.put("year", year);
+    
+    if (month != null && month > 0) {
+        query.append("AND EXTRACT(MONTH FROM create_at) = :month ");
+        params.put("month", month);
+    }
+
+    // 3. Xử lý danh sách Quận/Huyện cần truy vấn (ĐÃ BỎ WARD CODE)
+    List<District> targetDistricts = new ArrayList<>();
+    
+    if (districtCode != null && !districtCode.trim().isEmpty()) {
+        // Nếu truyền cụ thể 1 Quận, chỉ query quận đó
+        query.append("AND district_code = :districtCode ");
+        params.put("districtCode", districtCode);
+        
+        districtRepository.findById(districtCode).ifPresent(targetDistricts::add);
+    } else {
+        // Nếu không truyền Quận, lấy toàn bộ Quận của Tỉnh đó
+        targetDistricts = districtRepository.findByProvinceCode(provinceCode);
+    }
+
+    // Nhóm kết quả theo Mã quận và Thời gian
+    query.append("GROUP BY district_code, time_val ORDER BY time_val ASC");
+
+    // 4. Bắn ĐÚNG 1 CÂU LỆNH XUỐNG DATABASE
+    List<Map<String, Object>> dbResults = jdbcTemplate.queryForList(query.toString(), params);
+
+    // 5. Build kết quả Series từ dữ liệu thô
+    for (District district : targetDistricts) {
+        Series series = new Series();
+        series.setName(district.getName());
+        
+        // Khởi tạo toàn bộ mảng dữ liệu với giá trị 0 (hoặc null) trước
+        List<Object> dataPoints = new ArrayList<>(Collections.nCopies(daysInMonth, 0.0));
+        
+        // Đắp dữ liệu từ DB vào đúng vị trí ngày/tháng
+        for (Map<String, Object> row : dbResults) {
+            String dbDistrictCode = (String) row.get("district_code");
+            if (district.getCode().equals(dbDistrictCode)) {
+                // time_val trả về mốc ngày (hoặc tháng), mảng bắt đầu từ index 0 nên phải trừ đi 1
+                int timeVal = ((Number) row.get("time_val")).intValue();
+                double avgPrice = ((Number) row.get("avg_price")).doubleValue();
+                
+                if (timeVal >= 1 && timeVal <= daysInMonth) {
+                    dataPoints.set(timeVal - 1, avgPrice);
                 }
             }
         }
-        return chartOption;
+        
+        series.setData(dataPoints);
+        chartOption.getSeries().add(series);
     }
+
+    return chartOption;
+}
 
     public List<IRepAdmin> getLstMostChangePrice() {
         return repository.getLstMostChangePrice();
     }
 
-    public ChartOption getPriceOption(String postId) {
+    public ChartOption getPriceOption(UUID postId) {
         ChartOption chartOption = new ChartOption();
-        String query = "select price, DATE_FORMAT(create_at, '%Y-%m-%d %T') as createAt\n" +
-                "from real_estate_post_price \n" +
-                "where real_estate_post_id = :postId";
+        String query = "SELECT price, TO_CHAR(create_at, 'YYYY-MM-DD HH24:MI:SS') as createAt " +
+                "FROM real_estate_post_price WHERE real_estate_post_id = :postId";
         Map<String, Object> params = new HashMap<>();
-        params.put("postId", postId);
+        params.put("postId", postId); // Ép UUID
         List<Map<String, Object>> jdbcResponse = jdbcTemplate.queryForList(query, new MapSqlParameterSource(params));
-        jdbcResponse
-                .stream()
-                .forEach(e -> {
-                    chartOption.getXaxis().add(e.get("createAt"));
-                    chartOption.getSeries().add(e.get("price"));
-                });
+        jdbcResponse.forEach(e -> {
+            chartOption.getXaxis().add(e.get("createat")); // Postgres thường lowercase alias
+            chartOption.getSeries().add(e.get("price"));
+        });
         return chartOption;
     }
 
-    public ChartOption getViewChartOption(String postId, Integer month, Integer year) {
-        String query = "select count(id) as cnt\n" +
-                "from post_view \n" +
-                "where real_estate_post_id = :postId\n";
-        return getChartOptionCommon(query, postId, month, year);
+    public ChartOption getViewChartOption(UUID postId, Integer month, Integer year) {
+        return getChartOptionCommon("SELECT COUNT(id) as cnt FROM post_view WHERE real_estate_post_id = :postId", postId, month, year);
     }
 
-    public ChartOption getCommentChartOption(String postId, Integer month, Integer year) {
-        String query = "select count(id) as cnt\n" +
-                "from post_comment \n" +
-                "where post_id = :postId\n";
-        return getChartOptionCommon(query, postId, month, year);
+    public ChartOption getCommentChartOption(UUID postId, Integer month, Integer year) {
+        return getChartOptionCommon("SELECT COUNT(id) as cnt FROM post_comment WHERE post_id = :postId", postId, month, year);
     }
 
-    public ChartOption getInterestedChartOption(String postId, Integer month, Integer year) {
-        String query = "select count(id) as cnt\n" +
-                "from interested \n" +
-                "where real_estate_post_id = :postId\n";
-        return getChartOptionCommon(query, postId, month, year);
+    public ChartOption getInterestedChartOption(UUID postId, Integer month, Integer year) {
+        return getChartOptionCommon("SELECT COUNT(id) as cnt FROM interested WHERE real_estate_post_id = :postId", postId, month, year);
     }
 
-    public ChartOption getReportChartOption(String postId, Integer month, Integer year) {
-        String query = "select count(id) as cnt\n" +
-                "from post_report \n" +
-                "where post_id = :postId\n";
-        return getChartOptionCommon(query, postId, month, year);
+    public ChartOption getReportChartOption(UUID postId, Integer month, Integer year) {
+        return getChartOptionCommon("SELECT COUNT(id) as cnt FROM post_report WHERE post_id = :postId", postId, month, year);
     }
 
-    public ChartOption getClickedViewChartOption(String postId, Integer month, Integer year) {
-        String query = "select count(id) as cnt\n" +
-                "from clicked_info_view \n" +
-                "where real_estate_post_id = :postId\n";
-        return getChartOptionCommon(query, postId, month, year);
+    public ChartOption getClickedViewChartOption(UUID postId, Integer month, Integer year) {
+        return getChartOptionCommon("SELECT COUNT(id) as cnt FROM clicked_info_view WHERE real_estate_post_id = :postId", postId, month, year);
     }
 
-    public ChartOption getChartOptionCommon(String query, String postId, Integer month, Integer year) {
-        ChartOption chartOption= new ChartOption();
+    public ChartOption getChartOptionCommon(String query, UUID postId, Integer month, Integer year) {
+        ChartOption chartOption = new ChartOption();
         int val;
         Map<String, Object> params = new HashMap<>();
-        params.put("postId", postId);
+        params.put("postId", postId); // Ép kiểu UUID an toàn
+
         if (month == 0) {
-            query += " and extract(month from create_at) = :month and extract(year from create_at) = :year ";
+            query += " AND EXTRACT(MONTH FROM create_at) = :month AND EXTRACT(YEAR FROM create_at) = :year ";
             val = Util.getCurrMonth(year);
             for (int i = 1; i <= val; i++) {
                 params.put("month", i);
                 params.put("year", year);
                 Map<String, Object> jdbcResponse = jdbcTemplate.queryForMap(query, new MapSqlParameterSource(params));
                 chartOption.getXaxis().add(i);
-                chartOption.getSeries().add(jdbcResponse.get("cnt"));
+                chartOption.getSeries().add(((Number) jdbcResponse.get("cnt")).longValue());
             }
         } else {
-            query += " and date(create_at) = :date ";
+            query += " AND DATE(create_at) = CAST(:date AS DATE) ";
             val = Util.getDayOfMonth(month, year);
             for (int i = 1; i <= val; i++) {
-                String date = year + "-" + month + "-" + i;
-                params.put("date", date);
+                params.put("date", year + "-" + month + "-" + i);
                 Map<String, Object> jdbcResponse = jdbcTemplate.queryForMap(query, new MapSqlParameterSource(params));
                 chartOption.getXaxis().add(i);
-                chartOption.getSeries().add(jdbcResponse.get("cnt"));
+                chartOption.getSeries().add(((Number) jdbcResponse.get("cnt")).longValue());
             }
         }
         return chartOption;

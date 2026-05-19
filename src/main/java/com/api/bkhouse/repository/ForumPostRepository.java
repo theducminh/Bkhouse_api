@@ -46,12 +46,12 @@ public interface ForumPostRepository extends JpaRepository<ForumPost, UUID> {
             "and fp.id = tmp3.id\n" +
             "and fp.create_by != 'admin' \n" +
             "and fp.create_by = u.id \n" +
-            "and fp.enable = 1\n" +
+            "and fp.enable = true\n" +
             "order by fp.create_at;",nativeQuery = true)
     List<IUserForumPost> findAllByUser();
 
     @Modifying
-    @Query(value = "update forum_post set enable = 0 where id = :postId", nativeQuery = true)
+    @Query(value = "update forum_post set enable = false where id = :postId", nativeQuery = true)
     void deletePostById(UUID postId);
 
     Page<ForumPost> findByEnable(boolean enable, Pageable pageable);

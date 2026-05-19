@@ -24,7 +24,7 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
 
     Optional<Project> findByIdAndEnable(UUID id, boolean enable);
     
-    @EntityGraph(attributePaths = {"projectParams", "province", "district", "ward"})
+    @EntityGraph(attributePaths = {"projectParams", "province", "district"})
     List<Project> findByCreateByAndEnable(UUID createBy, boolean enable, Sort sort);
 
     boolean existsByIdAndEnable(UUID id, boolean enable);
@@ -60,6 +60,6 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
             "group by pr.full_name;", nativeQuery = true)
     List<IProjectStatistic> getByCommentInYear(Integer year);
 
-    @EntityGraph(attributePaths = {"projectParams", "province", "district", "ward"})
+    @EntityGraph(attributePaths = {"projectParams", "province", "district"})
     List<Project> findByEnable(boolean enable, Sort sort);
 }

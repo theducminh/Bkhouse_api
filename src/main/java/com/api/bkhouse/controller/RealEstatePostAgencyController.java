@@ -1,6 +1,8 @@
 package com.api.bkhouse.controller;
 
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,20 +37,30 @@ import java.util.UUID;
 @RequestMapping("/api/v1/real-estate-post-agency")
 @CrossOrigin(origins = "*", maxAge = 3600)
 public class RealEstatePostAgencyController {
-    @Autowired
-    private RealEstatePostAgencyService service;
+    private final RealEstatePostAgencyService service;
 
-    @Autowired
-    private ModelMapper modelMapper;
+    private final ModelMapper modelMapper;
 
-    @Autowired
-    private SpecialAccountService specialAccountService;
+    private final SpecialAccountService specialAccountService;
 
-    @Autowired
-    private RealEstatePostService realEstatePostService;
+    private final RealEstatePostService realEstatePostService;
 
-    @Autowired
-    private NotifyService notifyService;
+    private final NotifyService notifyService;
+
+    public RealEstatePostAgencyController(
+            RealEstatePostAgencyService service,
+            ModelMapper modelMapper,
+            SpecialAccountService specialAccountService,
+            RealEstatePostService realEstatePostService,
+            NotifyService notifyService) {
+        this.service = service;
+        this.modelMapper = modelMapper;
+        this.specialAccountService = specialAccountService;
+        this.realEstatePostService = realEstatePostService;
+        this.notifyService = notifyService;
+    }
+
+    private static final Logger logger = LoggerFactory.getLogger(RealEstatePostAgencyController.class);
 
     @GetMapping("/{agencyId}")
     @PreAuthorize("hasRole('ROLE_AGENCY')")
@@ -62,7 +74,7 @@ public class RealEstatePostAgencyController {
             List<REPAgencyResponse> repAgencyResponses = realEstatePostAgencies.stream()
                     .map(e -> modelMapper.map(e, REPAgencyResponse.class))
                     .collect(Collectors.toList());
-            repAgencyResponses.stream().forEach(e -> {
+            repAgencyResponses.forEach(e -> {
                 RealEstatePost realEstatePost = realEstatePostService.findByIdAndEnable(e.getRealEstatePostId());
                 if (realEstatePost != null) {
                     e.setRealEstatePostDTO(modelMapper.map(realEstatePost, RealEstatePostDTO.class));
@@ -70,6 +82,7 @@ public class RealEstatePostAgencyController {
             });
             return ResponseEntity.ok(new BaseResponse(repAgencyResponses, "", HttpStatus.OK));
         } catch (Exception e) {
+            logger.error("Lỗi khi lấy bài đăng theo agencyId: ", e);
             return ResponseEntity.ok(new BaseResponse(
                     null,
                     "Đã xảy ra lỗi khi lấy danh sách bài đăng nhờ môi giới giúp đỡ.",
@@ -85,7 +98,8 @@ public class RealEstatePostAgencyController {
             List<REPAgencyResponse> repAgencyResponses = realEstatePostAgencies.stream()
                     .map(e -> modelMapper.map(e, REPAgencyResponse.class))
                     .collect(Collectors.toList());
-            repAgencyResponses.stream().forEach(e -> {
+
+            repAgencyResponses.forEach(e -> {
                 RealEstatePost realEstatePost = realEstatePostService.findByIdAndEnable(e.getRealEstatePostId());
                 if (realEstatePost != null) {
                     e.setRealEstatePostDTO(modelMapper.map(realEstatePost, RealEstatePostDTO.class));
@@ -93,6 +107,7 @@ public class RealEstatePostAgencyController {
             });
             return ResponseEntity.ok(new BaseResponse(repAgencyResponses, "", HttpStatus.OK));
         } catch (Exception e) {
+            logger.error("Lỗi khi lấy bài đăng đã gửi yêu cầu: ", e);
             return ResponseEntity.ok(new BaseResponse(
                     null,
                     "Đã xảy ra lỗi khi lấy danh sách bài đăng đã nhờ môi giới giúp đỡ.",
@@ -127,11 +142,12 @@ public class RealEstatePostAgencyController {
                 realEstatePostAgencies.add(realEstatePostAgency);
             }
             service.saveAll(realEstatePostAgencies);
-            body.getAgencies().stream().forEach(e -> {
+            body.getAgencies().forEach(e -> {
                 notifyService.thongBaoCoBaiDangNhoGiup(e, body.getRealEstatePostId());
             });
             return ResponseEntity.ok(new BaseResponse(null, "Đã gửi yêu cầu nhờ giúp đỡ.", HttpStatus.OK));
         } catch (Exception e) {
+            logger.error("Lỗi khi gửi yêu cầu giúp đỡ: ", e);
             return ResponseEntity.ok(new BaseResponse(
                     null,
                     "Đã xảy ra lỗi khi gửi yêu cầu giúp đỡ",
@@ -159,9 +175,11 @@ public class RealEstatePostAgencyController {
             realEstatePostAgency.setUpdateBy(userDetails.getId());
             realEstatePostAgency.setUpdateAt(Util.getCurrentDateTime());
             Long response = service.updateStatus(realEstatePostAgency);
+            
             notifyService.thongBaoCapNhatTrangThaiBaiDang(realEstatePostAgency.getRealEstatePostId(), body.getStatus(), body.getRealEstatePostId());
             return ResponseEntity.ok(new BaseResponse(response, "Cập nhật trạng thái lời yêu cầu thành công.", HttpStatus.OK));
         } catch (Exception e) {
+            logger.error("Lỗi khi cập nhật trạng thái môi giới: ", e);
             return ResponseEntity.ok(new BaseResponse(
                     null,
                     "Đã xảy ra lỗi khi cập nhật yêu cầu giúp đỡ",
@@ -191,6 +209,7 @@ public class RealEstatePostAgencyController {
                     "Bạn không có quyền xóa lời yêu cầu này.",
                     HttpStatus.NOT_ACCEPTABLE));
         } catch (Exception e) {
+            logger.error("Lỗi khi xóa yêu cầu môi giới: ", e);
             return ResponseEntity.ok(new BaseResponse(
                     null,
                     "Đã xảy ra lỗi khi xóa yêu cầu giúp đỡ",

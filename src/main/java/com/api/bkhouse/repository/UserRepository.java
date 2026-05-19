@@ -30,4 +30,10 @@ public interface UserRepository extends JpaRepository<User, UUID> {
             "from role r inner join user_role ur on ur.role_id = r.id\n" +
             "where ur.user_id = :userId", nativeQuery = true)
     List<String> findRolesByUserId(UUID userId);
+
+    @Query(value = "SELECT COUNT(*) > 0 FROM user_role ur " +
+                   "INNER JOIN roles r ON ur.role_id = r.id " +
+                   "WHERE ur.user_id = :userId AND r.name = 'ROLE_ADMIN'", 
+           nativeQuery = true)
+    boolean isUserAdmin(@Param("userId") UUID userId);
 }

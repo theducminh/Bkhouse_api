@@ -110,18 +110,18 @@ public class ProjectService {
         return projectOptional.orElse(null);
     }
 
-    public boolean isInterested(UUID userId, UUID realEstatePostId, String deviceInfo) {
+    public boolean isInterested(UUID userId, UUID projectId, String deviceInfo) {
         if (deviceInfo != null && deviceInfo.length() > 0 && (userId == null || userId.toString().length() == 0)) {
-            return projectInterestedRepository.existsByDeviceInfoAndProjectId(deviceInfo, realEstatePostId);
+            return projectInterestedRepository.existsByDeviceInfoAndProjectId(deviceInfo, projectId);
         }
-        return projectInterestedRepository.existsByUserIdAndProjectId(userId, realEstatePostId);
+        return projectInterestedRepository.existsByUserIdAndProjectId(userId, projectId);
     }
 
     public Optional<ProjectInterested> findByDeviceInfoAndProjectId(String deviceInfo, UUID projectId) {
         return projectInterestedRepository.findByDeviceInfoAndProjectId(deviceInfo, projectId);
     }
 
-    public Optional<ProjectInterested> findByUserIdAndRealEstatePostId(UUID userId, UUID projectId) {
+    public Optional<ProjectInterested> findByUserIdAndProjectId(UUID userId, UUID projectId) {
         return projectInterestedRepository.findByUserIdAndProjectId(userId, projectId);
     }
 

@@ -67,8 +67,7 @@ public class User {
     @Column(name = "district_code")
     private String districtCode;
 
-    @Column(name = "ward_code")
-    private String wardCode;
+  
 
     @Column(name = "address")
     private String address;
@@ -203,14 +202,7 @@ public class User {
         this.districtCode = districtCode;
     }
 
-    public String getWardCode() {
-        return wardCode;
-    }
-
-    public void setWardCode(String wardCode) {
-        this.wardCode = wardCode;
-    }
-
+    
     public String getAddress() {
         return address;
     }

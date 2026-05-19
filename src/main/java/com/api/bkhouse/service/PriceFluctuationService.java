@@ -2,18 +2,21 @@ package com.api.bkhouse.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.api.bkhouse.entity.PriceFluctuation;
 import com.api.bkhouse.repository.PriceFluctuationRepository;
 
-import javax.transaction.Transactional;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 public class PriceFluctuationService {
-    @Autowired
-    private PriceFluctuationRepository repository;
+    
+    private final PriceFluctuationRepository repository;
+    public PriceFluctuationService(PriceFluctuationRepository repository) {
+        this.repository = repository;
+    }
 
     public List<PriceFluctuation> findByUserId(UUID userId) {
         return repository.findByUserId(userId);
@@ -31,8 +34,17 @@ public class PriceFluctuationService {
 
     @Transactional
     public void updateStatus(boolean enable, UUID userId) {
-        if (enable) {
-
+        // 1. Lấy toàn bộ các đăng ký theo dõi giá của user này
+        List<PriceFluctuation> userConfigs = repository.findByUserId(userId);
+        
+        // 2. Nếu họ có đăng ký thì mới cập nhật
+        if (userConfigs != null && !userConfigs.isEmpty()) {
+            for (PriceFluctuation config : userConfigs) {
+                // Giả sử trong Entity của bác biến này tên là isEnabled (hoặc enable)
+                config.setEnable(enable); 
+            }
+            // 3. Lưu lại toàn bộ list (Spring Data JPA tối ưu hàm này chạy rất nhanh)
+            repository.saveAll(userConfigs);
         }
     }
 }

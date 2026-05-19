@@ -32,9 +32,11 @@ public class PostPay {
     @Column(name = "content")
     private String content;
 
+    @Column(name = "status")
+    private String status;
+
     @NotNull
-    @NotBlank
-    @Column(name = "create_at")
+    @Column(name = "created_at")
     private Instant createAt;
 
     public Long getId() {
@@ -91,5 +93,13 @@ public class PostPay {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 }

@@ -18,32 +18,26 @@ public class SpecialAccountPay {
     private User user;
 
     @NotNull
-    @NotBlank
     @Column(name = "amount")
     private Integer amount;
 
     @NotNull
-    @NotBlank
     @Column(name = "account_balance")
     private Long accountBalance;
 
     @NotNull
-    @NotBlank
     @Column(name = "content")
     private String content;
 
     @Column(name = "is_monthly_pay")
     @NotNull
-    @NotBlank
     private boolean monthlyPay;
 
     @NotNull
-    @NotBlank
     @Column(name = "create_by")
     private UUID createBy;
 
     @NotNull
-    @NotBlank
     @Column(name = "create_at")
     private Instant createAt;
 

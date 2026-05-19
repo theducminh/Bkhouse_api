@@ -14,8 +14,6 @@ public class Interested {
     private Long id;
 
     @Column(name = "user_id")
-    @NotBlank
-    @NotNull
     private UUID userId;
 
     @Column(name = "device_info")
@@ -23,7 +21,6 @@ public class Interested {
 
     @Column(name = "real_estate_post_id")
     @NotNull
-    @NotBlank
     private UUID realEstatePostId;
 
     @Column(name = "create_by")

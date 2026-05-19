@@ -1,5 +1,7 @@
 package com.api.bkhouse.entity;
 
+import com.api.bkhouse.constant.enumeric.EType;
+
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -9,41 +11,48 @@ import java.util.UUID;
 @Entity
 @Table(name = "price_fluctuation")
 public class PriceFluctuation {
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id")
-    @NotNull
-    @NotBlank
+    @Column(name = "user_id", nullable = false)
+    @NotNull // Chỉ dùng NotNull cho UUID, KHÔNG dùng NotBlank
     private UUID userId;
 
-    @Column(name = "district_code")
+    @Column(name = "province_code", length = 20)
+    private String provinceCode;
+
+    @Column(name = "district_code", length = 20, nullable = false)
     @NotNull
-    @NotBlank
+    @NotBlank // NotBlank hợp lệ vì đây là kiểu String
     private String districtCode;
 
-    @Column(name = "district_price")
-    @NotNull
-    @NotBlank
-    private Long districtPrice;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "property_type", length = 50, nullable = false)
     @NotNull
-    @NotBlank
-    @Column(name = "enable")
-    private boolean enable;
+    private EType propertyType;
 
-    @Column(name = "create_by")
+    // Đổi tên cột thành is_enabled theo đúng script SQL của Supabase
+    @Column(name = "is_enabled", nullable = false) 
+    private boolean enable = true;
+
+    @Column(name = "created_by") // Khớp với created_by trong DB
     private UUID createBy;
 
-    @Column(name = "create_at")
+    @Column(name = "created_at") // Khớp với created_at trong DB
     private Instant createAt;
 
-    @Column(name = "update_by")
+    @Column(name = "updated_by") // Khớp với updated_by trong DB
     private UUID updateBy;
 
-    @Column(name = "update_at")
+    @Column(name = "updated_at") // Khớp với updated_at trong DB
     private Instant updateAt;
+
+    // ==========================================
+    // GETTERS & SETTERS
+    // ==========================================
 
     public Long getId() {
         return id;
@@ -61,6 +70,14 @@ public class PriceFluctuation {
         this.userId = userId;
     }
 
+    public String getProvinceCode() {
+        return provinceCode;
+    }
+
+    public void setProvinceCode(String provinceCode) {
+        this.provinceCode = provinceCode;
+    }
+
     public String getDistrictCode() {
         return districtCode;
     }
@@ -69,12 +86,14 @@ public class PriceFluctuation {
         this.districtCode = districtCode;
     }
 
-    public Long getDistrictPrice() {
-        return districtPrice;
+    
+
+    public EType getPropertyType() {
+        return propertyType;
     }
 
-    public void setDistrictPrice(Long districtPrice) {
-        this.districtPrice = districtPrice;
+    public void setPropertyType(EType propertyType) {
+        this.propertyType = propertyType;
     }
 
     public boolean isEnable() {

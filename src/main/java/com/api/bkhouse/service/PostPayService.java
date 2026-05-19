@@ -13,8 +13,11 @@ import java.util.UUID;
 
 @Service
 public class PostPayService {
-    @Autowired
-    private PostPayRepository repository;
+    
+    private final PostPayRepository repository;
+    public PostPayService(PostPayRepository repository) {
+        this.repository = repository;
+    }
 
     @Transactional
     public PostPay createPostPay(PostPay postPay) {
@@ -26,7 +29,6 @@ public class PostPayService {
     }
 
     public List<PostPay> findAllPostPays() {
-        List<PostPay> postPays = repository.findAll(Sort.by(Sort.Direction.ASC, "createAt"));
-        return postPays;
+        return repository.findAll(Sort.by(Sort.Direction.DESC, "createAt"));
     }
 }

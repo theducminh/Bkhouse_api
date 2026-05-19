@@ -1,19 +1,22 @@
 package com.api.bkhouse.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
 import com.api.bkhouse.entity.PostMedia;
 import com.api.bkhouse.repository.PostMediaRepository;
 
-import javax.transaction.Transactional;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 public class PostMediaService {
-    @Autowired
-    private PostMediaRepository repository;
+    
+    private final PostMediaRepository repository;
+    public PostMediaService(PostMediaRepository repository) {
+        this.repository = repository;
+    }
 
     public List<PostMedia> findByPostId(UUID postId) {
         return repository.findByPostId(postId);

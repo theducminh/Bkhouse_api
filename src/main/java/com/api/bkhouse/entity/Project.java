@@ -40,10 +40,6 @@ public class Project {
     @NotNull
     private District district;
 
-    @OneToOne
-    @JoinColumn(name = "ward_code", updatable = false)
-    @NotNull
-    private Ward ward;
 
     @Column(name = "address")
     @NotNull
@@ -126,13 +122,7 @@ public class Project {
         this.district = district;
     }
 
-    public Ward getWard() {
-        return ward;
-    }
-
-    public void setWard(Ward ward) {
-        this.ward = ward;
-    }
+    
 
 
     public Double getArea() {

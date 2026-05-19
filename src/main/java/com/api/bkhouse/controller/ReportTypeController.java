@@ -1,6 +1,8 @@
 package com.api.bkhouse.controller;
 
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,11 +27,17 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/v1/report-type")
 @CrossOrigin(origins = "*", maxAge = 3600)
 public class ReportTypeController {
-    @Autowired
-    private ReportTypeService service;
 
-    @Autowired
-    private ModelMapper modelMapper;
+    private final ReportTypeService service;
+
+    private final ModelMapper modelMapper;
+
+    public ReportTypeController(ReportTypeService service, ModelMapper modelMapper) {
+        this.service = service;
+        this.modelMapper = modelMapper;
+    }
+
+    private static final Logger logger = LoggerFactory.getLogger(ReportTypeController.class);
 
     @PostMapping
     @PreAuthorize("hasRole('ROLE_ADMIN')")
@@ -46,6 +54,7 @@ public class ReportTypeController {
                     "Tạo danh mục báo cáo thành công.",
                     HttpStatus.OK));
         } catch (Exception e) {
+            logger.error("Lỗi khi tạo danh mục báo cáo: ", e);
             return ResponseEntity.ok(new BaseResponse(
                     null,
                     "Đã xảy ra lỗi khi tạo danh mục báo cáo.",
@@ -68,6 +77,7 @@ public class ReportTypeController {
                     "Cập nhật danh mục báo cáo thành công.",
                     HttpStatus.OK));
         } catch (Exception e) {
+            logger.error("Lỗi khi cập nhật danh mục báo cáo: ", e);
             return ResponseEntity.ok(new BaseResponse(
                     null,
                     "Đã xảy ra lỗi khi cập nhật danh mục báo cáo.",
@@ -79,13 +89,13 @@ public class ReportTypeController {
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<BaseResponse> delete(@PathVariable Integer id) {
         try {
-            service.deletePostReportTypeByReportTypeId(id);
-            service.deletePostReportType(id);
+            service.deleteReportType(id);
             return ResponseEntity.ok(new BaseResponse(
                     null,
                     "Xóa danh mục báo cáo thành công.",
                     HttpStatus.OK));
         } catch (Exception e) {
+            logger.error("Lỗi khi xóa danh mục báo cáo: ", e);
             return ResponseEntity.ok(new BaseResponse(
                     null,
                     "Đã xảy ra lỗi khi xóa danh mục báo cáo.",
@@ -100,7 +110,6 @@ public class ReportTypeController {
             List<ReportTypeResponse> reportTypeResponses = new ArrayList<>();
             service
                 .getAll()
-                .stream()
                 .forEach(e -> {
                     ReportTypeResponse response = modelMapper.map(e, ReportTypeResponse.class);
                     response.setCount(service.countByReportTypeId(e.getId()));
@@ -108,6 +117,7 @@ public class ReportTypeController {
                 });
             return ResponseEntity.ok(new BaseResponse(reportTypeResponses, "", HttpStatus.OK));
         } catch (Exception e) {
+            logger.error("Lỗi khi lấy danh sách danh mục báo cáo: ", e);
             return ResponseEntity.ok(new BaseResponse(
                     null,
                     "Đã xảy ra lỗi khi lấy danh sách danh mục báo cáo.",
@@ -127,6 +137,7 @@ public class ReportTypeController {
                             .collect(Collectors.toList()), "", HttpStatus.OK
             ));
         } catch (Exception e) {
+            logger.error("Lỗi khi lấy danh mục báo cáo forum: ", e);
             return ResponseEntity.ok(new BaseResponse(
                     null,
                     "Đã xảy ra lỗi khi lấy danh sách danh mục báo cáo của bài đăng trên diễn đàn." + e.getMessage(),

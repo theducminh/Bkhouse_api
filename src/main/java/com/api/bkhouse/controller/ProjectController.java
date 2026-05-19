@@ -241,7 +241,7 @@ public class ProjectController {
             if (!projectService.existsByIdAndEnable(body.getProjectId())) {
                 return ResponseEntity.ok(new BaseResponse(null, "Không tìm thấy bài đăng phù hợp.", HttpStatus.NOT_FOUND));
             }
-            Optional<ProjectInterested> interestedOptional = projectService.findByUserIdAndRealEstatePostId(userDetails.getId(), body.getProjectId());
+            Optional<ProjectInterested> interestedOptional = projectService.findByUserIdAndProjectId(userDetails.getId(), body.getProjectId());
             if (interestedOptional.isEmpty()) {
                 body.setCreateAt(Util.getCurrentDateTime());
                 body.setId(null);

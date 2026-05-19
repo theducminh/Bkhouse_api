@@ -1,7 +1,8 @@
 package com.api.bkhouse.controller;
 
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,7 +24,6 @@ import com.api.bkhouse.service.PriceFluctuationService;
 import com.api.bkhouse.service.UserService;
 import com.api.bkhouse.util.Util;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -32,17 +32,25 @@ import java.util.UUID;
 @RequestMapping("/api/v1/price-fluctuation")
 @CrossOrigin(origins = "*", maxAge = 3600)
 public class PriceFluctuationController {
-    @Autowired
-    private PriceFluctuationService service;
+    
+    private final PriceFluctuationService service;
+    private final UserService userService;
+    private final DistrictService districtService;
+    private final ModelMapper modelMapper;
 
-    @Autowired
-    private UserService userService;
+    private static final Logger logger = LoggerFactory.getLogger(PriceFluctuationController.class);
 
-    @Autowired
-    private DistrictService districtService;
-
-    @Autowired
-    private ModelMapper modelMapper;
+    // Chuẩn Spring Boot: Constructor Injection
+    public PriceFluctuationController(
+            PriceFluctuationService service,
+            UserService userService,
+            DistrictService districtService,
+            ModelMapper modelMapper) {
+        this.service = service;
+        this.userService = userService;
+        this.districtService = districtService;
+        this.modelMapper = modelMapper;
+    }
 
     @GetMapping("/user/{userId}")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_AGENCY')")
@@ -55,6 +63,8 @@ public class PriceFluctuationController {
             PriceFluctuationResponse response = new PriceFluctuationResponse();
             User user = userService.findById(userId);
             response.setUser(modelMapper.map(user, UserDTO.class));
+            
+            // Giữ nguyên logic gom nhóm Quận để Frontend không bị vỡ giao diện
             List<DistrictDTO> districts = new ArrayList<>();
             for (PriceFluctuation priceFluctuation: priceFluctuations) {
                 District district = districtService.findByCode(priceFluctuation.getDistrictCode());
@@ -71,6 +81,7 @@ public class PriceFluctuationController {
 
             return ResponseEntity.ok(new BaseResponse(response, "", HttpStatus.OK));
         } catch (Exception e) {
+            logger.error("Lỗi trong findByUserId: ", e);
             return ResponseEntity.ok(new BaseResponse(
                     null,
                     "Đã xảy ra lỗi khi lấy thông tin đăng ký biến động giá của người dùng. " + e.getMessage(),
@@ -84,22 +95,25 @@ public class PriceFluctuationController {
             @RequestBody PriceFluctuationRequest request,
             @CurrentUser UserDetailsImpl currentUser) {
         try {
-            if (request.getDistricts().isEmpty()) {
+            if (request.getDistricts() == null || request.getDistricts().isEmpty()) {
                 return ResponseEntity.ok(new BaseResponse(
                         null,
                         "Danh sách quận/huyện/thị xã trống.",
                         HttpStatus.NO_CONTENT));
             }
-            PriceFluctuation priceFluctuation = new PriceFluctuation();
-            priceFluctuation.setId(null);
-            priceFluctuation.setDistrictPrice(0L);
-            priceFluctuation.setCreateAt(Util.getCurrentDateTime());
-            priceFluctuation.setEnable(true);
-            priceFluctuation.setCreateBy(currentUser.getId());
-            priceFluctuation.setUserId(request.getUserId());
-
+            
             for (String districtCode: request.getDistricts()) {
+                PriceFluctuation priceFluctuation = new PriceFluctuation();
+                priceFluctuation.setCreateAt(Util.getCurrentDateTime());
+                priceFluctuation.setEnable(true);
+                priceFluctuation.setCreateBy(currentUser.getId());
+                priceFluctuation.setUserId(request.getUserId());
+                
+                // 🚨 Map đầy đủ dữ liệu mới từ Request xuống DB
                 priceFluctuation.setDistrictCode(districtCode);
+                priceFluctuation.setProvinceCode(request.getProvinceCode());
+                priceFluctuation.setPropertyType(request.getPropertyType());
+                
                 service.save(priceFluctuation);
             }
 
@@ -108,6 +122,7 @@ public class PriceFluctuationController {
                     "Đăng ký nhận thông báo biến động giá thành công.",
                     HttpStatus.OK));
         } catch (Exception e) {
+            logger.error("Lỗi khi tạo đăng ký biến động giá: ", e);
             return ResponseEntity.ok(new BaseResponse(
                     null,
                     "Đã xảy ra lỗi khi đăng ký nhận thông báo biến động giá. " + e.getMessage(),
@@ -122,26 +137,30 @@ public class PriceFluctuationController {
             @RequestBody PriceFluctuationRequest request,
             @CurrentUser UserDetailsImpl currentUser) {
         try {
-            if (request.getDistricts().isEmpty()) {
+            if (request.getDistricts() == null || request.getDistricts().isEmpty()) {
                 return ResponseEntity.ok(new BaseResponse(
                         null,
                         "Danh sách quận/huyện/thị xã trống.",
                         HttpStatus.NO_CONTENT));
             }
+            // Xóa cấu hình cũ của User
             service.deleteByUserId(request.getUserId());
 
-            PriceFluctuation priceFluctuation = new PriceFluctuation();
-            priceFluctuation.setId(null);
-            priceFluctuation.setDistrictPrice(0L);
-            priceFluctuation.setCreateAt(Util.getCurrentDateTime());
-            priceFluctuation.setEnable(true);
-            priceFluctuation.setCreateBy(currentUser.getId());
-            priceFluctuation.setUserId(request.getUserId());
-            priceFluctuation.setUpdateAt(Util.getCurrentDateTime());
-            priceFluctuation.setUpdateBy(currentUser.getId());
-
+            // Lưu cấu hình mới
             for (String districtCode: request.getDistricts()) {
+                PriceFluctuation priceFluctuation = new PriceFluctuation();
+                priceFluctuation.setCreateAt(Util.getCurrentDateTime());
+                priceFluctuation.setEnable(true);
+                priceFluctuation.setCreateBy(currentUser.getId());
+                priceFluctuation.setUserId(request.getUserId());
+                priceFluctuation.setUpdateAt(Util.getCurrentDateTime());
+                priceFluctuation.setUpdateBy(currentUser.getId());
+                
+                // 🚨 Cập nhật cấu trúc mới
                 priceFluctuation.setDistrictCode(districtCode);
+                priceFluctuation.setProvinceCode(request.getProvinceCode());
+                priceFluctuation.setPropertyType(request.getPropertyType());
+                
                 service.save(priceFluctuation);
             }
 
@@ -150,6 +169,7 @@ public class PriceFluctuationController {
                     "Cập nhật thông tin đăng ký nhận thông báo biến động giá thành công.",
                     HttpStatus.OK));
         } catch (Exception e) {
+            logger.error("Lỗi khi cập nhật biến động giá: ", e);
             return ResponseEntity.ok(new BaseResponse(
                     null,
                     "Đã xảy ra lỗi khi đăng ký nhận thông báo biến động giá. " + e.getMessage(),
@@ -169,6 +189,7 @@ public class PriceFluctuationController {
                     HttpStatus.OK
             ));
         } catch (Exception e) {
+            logger.error("Lỗi khi xóa đăng ký biến động giá: ", e);
             return ResponseEntity.ok(new BaseResponse(
                     null,
                     "Đã xảy ra lỗi khi hủy đăng ký nhận thông báo biến động giá. " + e.getMessage(),
@@ -184,22 +205,22 @@ public class PriceFluctuationController {
             @CurrentUser UserDetailsImpl currentUser) {
         try {
             List<PriceFluctuation> priceFluctuations = service.findByUserId(request.getUserId());
-            priceFluctuations
-                    .stream()
-                    .forEach(e -> {
-                        e.setUpdateBy(currentUser.getId());
-                        e.setUpdateAt(Util.getCurrentDateTime());
-                        service.save(e);
-                    });
+            priceFluctuations.forEach(e -> {
+                e.setEnable(request.isEnable()); // Khớp với getter/setter của request
+                e.setUpdateBy(currentUser.getId());
+                e.setUpdateAt(Util.getCurrentDateTime());
+                service.save(e);
+            });
             return ResponseEntity.ok(new BaseResponse(
                     null,
                     "Cập nhật trạng thái nhận thông báo biến động giá thành công.",
                     HttpStatus.OK
                     ));
         } catch (Exception e) {
+            logger.error("Lỗi khi enable/disable biến động giá: ", e);
             return ResponseEntity.ok(new BaseResponse(
                     null,
-                    "Đã xảy ra lỗi khi cập nhật trạng thái nhận thông báo biến động giá. ",
+                    "Đã xảy ra lỗi khi cập nhật trạng thái nhận thông báo biến động giá. " + e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR
             ));
         }

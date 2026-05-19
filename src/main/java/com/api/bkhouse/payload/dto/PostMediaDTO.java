@@ -8,26 +8,20 @@ import javax.validation.constraints.NotNull;
 import com.api.bkhouse.constant.enumeric.EPostType;
 
 public class PostMediaDTO {
-    @NotNull
-    @NotBlank
+   
     private String id;
 
     @NotNull
-    @NotBlank
     private String mediaType;
 
-    @NotNull
     @NotBlank
     private String postId;
 
     @NotNull
-    @NotBlank
-    @Enumerated(EnumType.STRING)
-    private EPostType postType;
+    private String mediaUrl;
 
-    @NotNull
     @NotBlank
-    private String name;
+    private boolean isThumbnail;
 
     public String getId() {
         return id;
@@ -53,19 +47,17 @@ public class PostMediaDTO {
         this.postId = postId;
     }
 
-    public EPostType getPostType() {
-        return postType;
+    public String getMediaUrl() {
+        return mediaUrl;
+    }
+    public void setMediaUrl(String mediaUrl) {
+        this.mediaUrl = mediaUrl;
     }
 
-    public void setPostType(EPostType postType) {
-        this.postType = postType;
+    public boolean isThumbnail() {
+        return isThumbnail;
     }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
+    public void setThumbnail(boolean isThumbnail) {
+        this.isThumbnail = isThumbnail;
     }
 }

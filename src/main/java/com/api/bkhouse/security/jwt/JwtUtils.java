@@ -23,10 +23,10 @@ import io.jsonwebtoken.security.Keys;
 public class JwtUtils {
     private static final Logger logger = LoggerFactory.getLogger(JwtUtils.class);
 
-    @Value("${dieppv.app.jwtSecret}")
+    @Value("${ducnm.app.jwtSecret}")
     private String jwtSecret;
 
-    @Value("${dieppv.app.jwtExpirationMs}")
+    @Value("${ducnm.app.jwtExpirationMs}")
     private int jwtExpirationMs;
 
     // Helper để tạo Key từ chuỗi Secret trong application.properties

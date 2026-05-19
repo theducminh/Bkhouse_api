@@ -27,20 +27,22 @@ import java.util.UUID;
 @RequestMapping("/api/no-auth")
 @CrossOrigin(origins = "*", maxAge = 3600)
 public class NoAuthController {
-    @Autowired
     private ReportTypeService reportTypeService;
 
-    @Autowired
     private PostReportService postReportService;
 
-    @Autowired
     private ModelMapper modelMapper;
 
-    @Autowired
     private ProjectService projectService;
 
+    public NoAuthController(ReportTypeService reportTypeService, PostReportService postReportService, ModelMapper modelMapper, ProjectService projectService) {
+        this.reportTypeService = reportTypeService;
+        this.postReportService = postReportService;
+        this.modelMapper = modelMapper;
+        this.projectService = projectService;
+    }
+
     private static final UUID ANONYMOUS_USER_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
-    private static final UUID ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
 
     private Logger logger = LoggerFactory.getLogger(NoAuthController.class);
 
@@ -55,6 +57,7 @@ public class NoAuthController {
                             .collect(Collectors.toList()), "", HttpStatus.OK
             ));
         } catch (Exception e) {
+            logger.error("Lỗi khi lấy danh sách danh mục báo cáo: ", e);
             return ResponseEntity.ok(new BaseResponse(
                     null,
                     "Đã xảy ra lỗi khi lấy danh sách danh mục báo cáo của bài đăng bán / cho thuê.",
@@ -99,6 +102,7 @@ public class NoAuthController {
                     projectService.isInterested(currentUserId, projectId, deviceInfo), "", HttpStatus.OK
             ));
         } catch (Exception e) {
+            logger.error("Lỗi khi check isInterested: ", e);
             return ResponseEntity.ok(new BaseResponse(
                     null,
                     "Đã xảy ra lỗi khi lấy thông tin người dùng quan tâm của bài viết.",
@@ -128,6 +132,7 @@ public class NoAuthController {
                 return ResponseEntity.ok(new BaseResponse(interestedOptional.get().getId(), "DELETED", HttpStatus.OK));
             }
         } catch (Exception e) {
+            logger.error("Lỗi khi xử lý quan tâm bài viết: ", e);
             return ResponseEntity.ok(new BaseResponse(
                     null,
                     "Đã xảy ra lỗi khi lưu thông tin quan tâm bài đăng.",
@@ -162,6 +167,7 @@ public class NoAuthController {
             Long increaseViewId = projectService.increaseView(id);
             return ResponseEntity.ok(new BaseResponse(increaseViewId, "", HttpStatus.OK));
         } catch (Exception e) {
+            logger.error("Lỗi khi tăng lượt xem dự án: ", e);
             return ResponseEntity.ok(new BaseResponse(
                     null,
                     "Đã xảy ra lỗi khi lấy danh sách bài viết dự án. " + e.getMessage(),

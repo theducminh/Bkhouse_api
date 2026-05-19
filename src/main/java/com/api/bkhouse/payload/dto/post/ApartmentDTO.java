@@ -8,32 +8,25 @@ import javax.validation.constraints.NotNull;
 import com.api.bkhouse.constant.enumeric.EDirection;
 
 public class ApartmentDTO extends BasePost{
-    @NotNull
-    @NotBlank
+    
     private Long id;
 
     @NotNull
-    @NotBlank
     private Integer floorNo;
 
     @NotNull
-    @NotBlank
     private Integer noBedroom;
 
     @NotNull
-    @NotBlank
     private Integer noBathroom;
 
     @NotNull
-    @NotBlank
     private String furniture;
 
     @Enumerated(EnumType.STRING)
     @NotNull
-    @NotBlank
     private EDirection balconyDirection;
 
-    @NotNull
     @NotBlank
     private String construction;
 

@@ -6,15 +6,12 @@ import javax.validation.constraints.NotNull;
 
 public class PlotDTO extends BasePost{
     @NotNull
-    @NotBlank
     private Long id;
 
     @NotNull
-    @NotBlank
     private Double frontWidth;
 
     @NotNull
-    @NotBlank
     private Double behindWidth;
 
     public Long getId() {

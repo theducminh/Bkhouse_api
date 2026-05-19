@@ -10,11 +10,15 @@ import java.util.UUID;
 
 @Service
 public class HouseService {
-    @Autowired
-    private HouseRepository repository;
+   
+    private final HouseRepository repository;
+    
+    public HouseService(HouseRepository repository) {
+        this.repository = repository;
+    }
 
     public House findByRealEstatePostId(UUID id) {
-        return repository.findByRealEstatePostId(id).get();
+        return repository.findByRealEstatePostId(id).orElse(null);
     }
 
     @Transactional
@@ -26,7 +30,8 @@ public class HouseService {
     public House update(House house) {
         return repository.save(house);
     }
-
+    
+    @Transactional
     public void deleteByRealEstatePostId(UUID realEstatePostId) {
         repository.deleteByRealEstatePostId(realEstatePostId);
     }

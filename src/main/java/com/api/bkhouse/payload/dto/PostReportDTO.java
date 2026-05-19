@@ -8,21 +8,31 @@ import java.util.Set;
 import java.util.UUID;
 
 public class PostReportDTO {
-    @NotBlank
-    @NotNull
+    
+    // Bỏ hết Validate ở ID vì lúc tạo mới (Create) thì ID sẽ là null
     private Long id;
-    @NotBlank
-    @NotNull
+    
+    // Bỏ Validate ở đây để khách chỉ cần tick chọn lý do, lười gõ chữ vẫn report được
     private String description;
-    @NotBlank
+    
+    // BỎ @NotBlank đi, UUID chỉ dùng @NotNull thôi
     @NotNull
     private UUID postId;
+    
+    // ĐÃ SỬA: Đổi isForumPost thành postType (Chuẩn String thì mới dùng đc @NotBlank)
     @NotBlank
-    @NotNull
-    private boolean isForumPost;
+    private String postType;
+    
     private UUID createBy;
     private Instant createAt;
+    
+    // ĐÃ THÊM: Quản lý trạng thái
+    private String status;
+    private Instant resolvedAt;
+    
     private Set<ReportTypeDTO> reportTypes;
+
+    // ================= GETTERS & SETTERS =================
 
     public Long getId() {
         return id;
@@ -48,20 +58,12 @@ public class PostReportDTO {
         this.postId = postId;
     }
 
-    public boolean isForumPost() {
-        return isForumPost;
+    public String getPostType() {
+        return postType;
     }
 
-    public void setForumPost(boolean forumPost) {
-        isForumPost = forumPost;
-    }
-
-    public Set<ReportTypeDTO> getReportTypes() {
-        return reportTypes;
-    }
-
-    public void setReportTypes(Set<ReportTypeDTO> reportTypes) {
-        this.reportTypes = reportTypes;
+    public void setPostType(String postType) {
+        this.postType = postType;
     }
 
     public UUID getCreateBy() {
@@ -78,5 +80,29 @@ public class PostReportDTO {
 
     public void setCreateAt(Instant createAt) {
         this.createAt = createAt;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Instant getResolvedAt() {
+        return resolvedAt;
+    }
+
+    public void setResolvedAt(Instant resolvedAt) {
+        this.resolvedAt = resolvedAt;
+    }
+
+    public Set<ReportTypeDTO> getReportTypes() {
+        return reportTypes;
+    }
+
+    public void setReportTypes(Set<ReportTypeDTO> reportTypes) {
+        this.reportTypes = reportTypes;
     }
 }

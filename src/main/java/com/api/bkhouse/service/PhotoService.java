@@ -26,8 +26,12 @@ import java.util.UUID;
 @Service
 public class PhotoService {
     
-    @Autowired
-    private PhotoRepository photoRepository;
+    
+    private final PhotoRepository photoRepository;
+
+    public PhotoService(PhotoRepository photoRepository) {
+        this.photoRepository = photoRepository;
+    }
 
     @Transactional
     public String addPhoto(String title, MultipartFile file) throws IOException { 
@@ -38,7 +42,7 @@ public class PhotoService {
     }
 
     public Photo getPhoto(String id) { 
-        return photoRepository.findById(new ObjectId(id)).get();
+        return photoRepository.findById(new ObjectId(id)).orElse(null);
     }
 
     @Transactional

@@ -1,8 +1,8 @@
 package com.api.bkhouse.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.stereotype.Service;
 
 import com.api.bkhouse.entity.UserDeviceToken;
 import com.api.bkhouse.repository.UserDeviceTokenRepository;
@@ -14,15 +14,15 @@ import java.util.UUID;
 
 @Service
 public class UserDeviceTokenService {
-    @Autowired
-    private UserDeviceTokenRepository repository;
+    
+    private final UserDeviceTokenRepository repository;
+
+    public UserDeviceTokenService(UserDeviceTokenRepository repository) {
+        this.repository = repository;
+    }
 
     public UserDeviceToken findByUserIdAndDeviceInfo(UUID userId, String deviceInfo) {
-        Optional<UserDeviceToken> userDeviceToken = repository.findByUserIdAndDeviceInfo(userId, deviceInfo);
-        if (userDeviceToken.isEmpty()) {
-            return null;
-        }
-        return userDeviceToken.get();
+        return repository.findByUserIdAndDeviceInfo(userId, deviceInfo).orElse(null);
     }
 
     @Transactional
@@ -34,6 +34,8 @@ public class UserDeviceTokenService {
     public void create(UserDeviceToken userDeviceToken) {
         UserDeviceToken repoSave = findByUserIdAndDeviceInfo(userDeviceToken.getUserId(), userDeviceToken.getDeviceInfo());
         if (repoSave != null) {
+            repoSave.setNotifyToken(userDeviceToken.getNotifyToken());
+            repoSave.setEnable(true);
             repoSave.setLogout(false);
             repoSave.setUpdateAt(Util.getCurrentDateTime());
         } else {
@@ -41,4 +43,6 @@ public class UserDeviceTokenService {
         }
         repository.save(repoSave);
     }
+
+     
 }
